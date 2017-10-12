@@ -25,8 +25,13 @@ fieldset {
 	border: none;
 }
 
+input, select, option {
+	font-size: 1em;
+}
+
 .button {
 	text-align: center;
+	padding: 0.5em;
 }
 
 .button:hover, .button_link:hover, #menu_btn {
@@ -349,7 +354,7 @@ footer {
 	/* margin: -1.2em 0 0 3em; */
 	display: inline-block;
 	position: relative;
-	top: -0.3em;
+	top: -0.5em;
 	left: 1em;
 }
 
@@ -855,7 +860,7 @@ function clearUserData(){
 <div class='screen config_screen' id='login_page'>
 <form name='login_page'>
 <input name='login_name' type='email' required placeholder="example@me.com"></input><br/>
-<input name='password' type='password' required placeholder="Password"></input><br/>
+<input name='password' type='password' required placeholder="Password"></input><br/><br/>
 <div class='centered_buttons'>
 <div class='button submit default_button'>Login</div>
 <div class='button button_link' data-link="new_account">Create Account</div>
