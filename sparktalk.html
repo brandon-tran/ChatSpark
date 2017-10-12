@@ -11,12 +11,9 @@ body {
     background: none repeat scroll 0 0 #fff;
     color: #FFFFFF;
     font-family: "Open Sans";
-	line-height: 26px;
-    /*padding: 10%;*/
+	/* line-height: 26px; */
+	line-height: 1em;
     margin: 0 auto;
-	/* background-image: url('https://www.123freevectors.com/wp-content/uploads/new/decorative-floral/016_swirl-floral-design-vector-l.jpg'); 
-	background-size: cover;
-	*/
 	background-image:url(128-137.jpg);
 	background-repeat:repeat;
 	color: black;
@@ -54,6 +51,10 @@ label {
 	width: 45%;
 	clear: both;
 	margin-bottom: 0.5em;
+}
+
+.msg span {
+	line-height: 1.4em;
 }
 
 .msg_left + .msg_left, .msg_right + .msg_right {
@@ -406,7 +407,7 @@ pendingAJAXCallbacks = {};
 rqId = 0;
 
 
-strings = [ "Context", "Work", "Social", "Date", "Topic", "Basketball", "Cricket", "What day is it?", "Why 1?", "Why 2?", "Why 3?"];
+strings = [ "Context", "Work", "Social", "Date", "Topic", "Basketball", "Cricket", "What day is it?", "Why 1 sdf sdiusdf zuhzsdf uzsd fiu iuoiuzoiub sd07h zs 8zsdf yb zshbdfsdf?", "Why 2?", "Why 3?"];
 
 allQuestions = {
 0 : { 
@@ -556,7 +557,7 @@ function writeItem(text, node, left, _onclick, afterNode){
 	var div = document.createElement('div');
 	div.classList.add('msg');
 	div.classList.add(left ? 'msg_left' : 'msg_right');
-	div.innerHTML = text;
+	div.innerHTML = "<span>" + text + "</span>";
 	div.onclick = _onclick;
 	div.node = node;
 	if((afterNode == null) || (afterNode.el == null))
