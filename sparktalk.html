@@ -31,7 +31,7 @@ fieldset {
 	text-align: center;
 }
 
-.button:hover {
+.button:hover, .button_link:hover, #menu_btn {
 	cursor: pointer;
 }
 
@@ -52,7 +52,7 @@ label {
 	float: left;
 	width: 35%;
 	clear: both;
-	margin-bottom: 1em;
+	margin-bottom: 0.5em;
 }
 
 .msg_left + .msg_left, .msg_right + .msg_right {
@@ -94,6 +94,10 @@ label {
 	font-size: 2.5em;
 }
 
+.msg_left:hover, .msg_right:hover {
+	cursor: pointer;
+}
+
 .msg.vote > div {
 	position: absolute;
 	top: 0;
@@ -124,18 +128,6 @@ label {
 	background-color: red;
 	right: 0;
 	border-bottom-left-radius: 0;
-}
-
-.actionpane {
-	margin-bottom: 1.5em;
-	min-height: 100%;
-	display: none;
-}
-
-#login_page {
-	display: block;
-	background-color: white;
-
 }
 
 .centered_buttons {
@@ -189,7 +181,6 @@ fieldset, input[type='text'], input[type='email'], input[type='password']{
 	float: right!important;
 }
 
-
 header {
 	position: fixed;
 	top: 0;
@@ -206,9 +197,76 @@ header, .footer_right, #menu > div:hover {
 
 #menu_btn {
 	float: right;
-	font-size: 2em;
 	margin: 0.25em 1em 0 0;
 }
+
+header > div {
+	display: inline-block;
+	font-size: 2em;
+}
+
+.screen {
+	display: none;
+}
+
+body.settings_page #settings_page, body.login_page:not([data-logged-in]) #login_page, body.new_account:not([data-logged-in]) #new_account, body.reset_password:not([data-logged-in]) #reset_password {
+	display: block;
+}
+
+body[data-logged-in]:not(.settings_page) #textwrapper {
+	display: block;
+}
+
+
+#nav {
+	padding-top: 0.3em;
+	margin-right: 1em;
+	width: 1em;
+}
+
+#nav::after {
+	position: relative;
+	/* top:-0.9em; */
+	left: 2em;
+	white-space: nowrap;
+	visibility: visible;
+	cursor: default;
+	font-size: 0.8em;
+}
+
+.login_page #nav {
+	visibility: hidden;
+}
+
+.new_account #nav::after {
+	content: "New Account";	
+}
+
+.settings_page #nav::after {
+	content: "Settings";	
+}
+
+.reset_password #nav::after {
+	content: "Reset Password";	
+}
+
+.login_page #nav::after {
+	content: "Login";	
+}
+
+body[data-logged-in]:not(.settings_page) #nav::after {
+	content: "Sparkchat";
+}
+
+body[data-logged-in]:not(.settings_page) #nav {
+	visibility: hidden;
+}
+
+
+body:not([data-logged-in]) #logout {
+	display: none;
+}
+
 
 #menu {
 	position: absolute;
@@ -218,28 +276,39 @@ header, .footer_right, #menu > div:hover {
 	width: auto;
 	color: black;
 	display: none;
+	font-size: 0.4em;
+}
+
+#menu_btn.active_menu #menu {
+	display:block;
 }
 
 #menu > div {
-	padding: 1em;
+	padding: 0.3em;
+	font-weight: bold;
+	text-align: left;
+	width: 8em;
 
 }
 
 #textwrapper {
 	position: relative;
-	width: 80%;
-	margin-left: 10%;
-	margin-top: 3.1em;
 	text-align: center;
+}
+
+#textpane {
+	padding: 2em 1em 0 1em;
 }
 
 footer {
 	background-color: transparent;		
 	color: gray;
-	width: inherit;
+	width: 100%;
 	position: fixed;
 	bottom: 0;
 	height: 2.5em;	
+	padding: 0 0.5em 0 0.5em;
+	margin-bottom: 0.5em;
 }
 
 .footer_left {
@@ -499,31 +568,38 @@ function writeItem(text, node, left, _onclick, afterNode){
 
 function menu_select(ev){
 	console.log("clicked");
-	var menu = document.getElementById('menu');
-	document.body.addEventListener('mousedown', function(ev){
-		menu.style.display = 'none';
-		document.body.removeEventListener('mousedown', arguments.callee);
-		menu.parentNode.removeEventListener('mousedown', stopMouseDown);
-	});
-	
-	function stopMouseDown(ev){
-		ev.stopPropagation();
+	var mb = document.getElementById('menu_btn');
+	if(mb.classList.contains('active_menu'))
+		kill();
+	else {
+		mb.classList.add('active_menu');
+		document.body.addEventListener('mousedown', outsideMD);
+		mb.addEventListener('mousedown', stpMD);
 	}
 	
-	menu.parentNode.addEventListener('mousedown', stopMouseDown);
-	menu.style.display = 'block';
+	function stpMD(ev){
+		ev.stopPropagation();	
+	}
 	
+	function outsideMD(ev){
+		kill();
+	}
+
+	function kill(){
+		mb.classList.remove('active_menu');
+		document.body.removeEventListener('mousedown', outsideMD);
+		mb.removeEventListener('mousedown', stpMD);
+	}
 }
 
 window.onload  = function(){ //test code
 	hideEl = document.getElementById('hide');
 	textpane = document.getElementById('textpane'); // must retain this 
-	document.getElementById('menu_btn').onclick = menu_select;	
 	writeMenuAndOptions(allQuestions, null);
 	initBirthday(); // todo move this somewhere else
-	for(let b of document.getElementsByClassName('submit_btn'))
+	for(let b of document.getElementsByClassName('submit'))
 		b.onclick = submitData;
-	initInputCheckers();
+	initListeners();
 }
 
 
@@ -719,51 +795,75 @@ function chkInputField(ev){
 			el.classList.add('invalid_input');
 }
 
-function initInputCheckers(){
+function initListeners(){
 	for(let f of document.forms){
 		f.addEventListener('change', chkInputField);
 		f.addEventListener('paste', chkInputField);
 		f.addEventListener('keypress', chkInputField);
 		f.addEventListener('focusout', chkInputField);
 	}
+	
+	for(let f of document.getElementsByClassName('button_link'))
+		f.addEventListener('click', ldPage);
+	
+	document.getElementById('logout').addEventListener('click', function(ev){
+		clearUserData();
+		document.body.removeAttribute('data-logged-in');
+	});
+
+	document.getElementById('menu_btn').addEventListener('click', menu_select);
+}
+
+function ldPage(ev){
+	console.log('ldPage()');
+	var pgId = ev.target.getAttribute('data-link');
+	document.body.className = pgId;
+	for(let e of document.querySelectorAll("input[type='email'].invalid_input, input[type='text'].invalid_input, fieldset.radio_container.invalid_input"))
+		if(!('value' in e) || (e.value.length==0))
+			e.classList.remove('invalid_input');
+}
+
+function clearUserData(){
+    for(let c of document.cookie.split(";"))
+		document.cookie = c.split('=')[0] + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+	if('user' in localStorage)
+		delete localStorage.user;
 }
 
 </script>
 
 </head>
-<body>
-<header><span class="left">Messages</span><div class='button' id='menu_btn'>&#x22ee;
+<body data-logged-in>
+<header><div class='button_link' data-link="login_page" id='nav'>&#x2b05;</div><div id='menu_btn'>&#x22ee;
 <div id='menu'>
-<div id='login'>Login</div>
-<div id='logout'>Logout</div>
-<div id='settings'>Settings</div>
+<div class='button_link' data-link="login_page" id='logout'>Logout</div>
+<div class='button_link' data-link='settings_page' id='settings'>Settings</div>
 </div>
 
 </div>
 </header>
 
-<div class='actionpane' id='settings'>123456</div>
-<div id='textwrapper'>
-<div id='textpane' class='actionpane'>
+<div id='textwrapper' class="screen">
+<div id='textpane'>
 </div>
 <footer><div class='footer_right'><span>&#x1f399;<span></div><div class='footer_left'><div>Type your text here</div></div></footer>
 </div>
 
 
-<div class='config_screen' id='login_page'>
+<div class='screen config_screen' id='login_page'>
 <form name='login_page'>
 <input name='login_name' type='email' required placeholder="example@me.com"></input><br/>
 <input name='password' type='password' required placeholder="Password"></input><br/>
 <div class='centered_buttons'>
-<div class='button default_button'>Login</div>
-<div class='button'>Create Account</div>
-<div class='button'>Forgot Password</div>
+<div class='button submit default_button'>Login</div>
+<div class='button button_link' data-link="new_account">Create Account</div>
+<div class='button button_link' data-link="reset_password">Forgot Password</div>
 </div>
 </form>
 </div>
 
 
-<div class='config_screen input_container' id='new_account'>
+<div class='config_screen screen' id='new_account'>
 <form name='new_account'>
 <input required placeholder='First Name' name='first_name' type='text'></input><br>
 <input required placeholder='Surname' name='surname' type='text'></input><br/>
@@ -788,16 +888,24 @@ function initInputCheckers(){
 <select name='year'>
 </select>
 </div>
-<div class='submit_btn button default_button'>Submit</div>
+<div class='submit submit_btn button default_button'>Submit</div>
 </form>
 
 </div>
 
-<div class='config_screen input_container' id='reset_password'>
+<div class='config_screen screen' id='reset_password'>
 <form name='reset_password'>
 Please enter your email address<br/>
 <input name='login_name' type='email' required placeholder="example@me.com"></input>
-<div class='submit_btn button default_button'>Submit</div>
+<div class='submit submit_btn button default_button'>Submit</div>
+</form>
+</div>
+
+<div class='config_screen screen' id='settings_page'>
+<form name='settings_page'>
+Settings here<br/>
+
+<div class='submit submit_btn button default_button'>Submit</div>
 </form>
 </div>
 
