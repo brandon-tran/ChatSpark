@@ -1,0 +1,806 @@
+<html>
+<head>
+<style>
+
+@import "https://fonts.googleapis.com/css?family=Open+Sans:400,600,700";
+
+* {
+    box-sizing: border-box;
+}
+body {
+    background: none repeat scroll 0 0 #fff;
+    color: #FFFFFF;
+    font-family: "Open Sans";
+    line-height: 26px;
+    /*padding: 10%;*/
+    margin: 0 auto;
+	/* background-image: url('https://www.123freevectors.com/wp-content/uploads/new/decorative-floral/016_swirl-floral-design-vector-l.jpg'); 
+	background-size: cover;
+	*/
+	background-image:url(128-137.jpg);
+	background-repeat:repeat;
+	color: black;
+
+}
+
+fieldset {
+	border: none;
+}
+
+.button {
+	text-align: center;
+}
+
+.button:hover {
+	cursor: pointer;
+}
+
+label {
+	font-size: 0.9em;
+}
+
+#hide {
+	display: none!important;
+}
+
+.msg {
+	display: block;
+	position: relative;
+	padding:0.75em;
+	border-radius: 0.8em;
+	
+	float: left;
+	width: 35%;
+	clear: both;
+	margin-bottom: 1em;
+}
+
+.msg_left + .msg_left, .msg_right + .msg_right {
+	border-radius: 0.8em!important;
+}
+
+.msg_left + .msg_left::before, .msg_right + .msg_right::after {
+	display: none!important;
+}
+
+.msg_left {
+	background-color: #E1FFC7;
+	border-top-left-radius: 0!important;
+	float: left;
+}
+
+.msg_right::after {
+	color: #FFEAB1;
+	content: "\25E4";
+	position: absolute;
+	top: 0;
+	right: -0.5em;
+	font-size: 2.5em;
+}
+
+
+.msg_right {
+	background-color: #FFEAB1; 
+	border-top-right-radius: 0!important;
+	float: right;
+}
+
+.msg_left::before {
+	color: #E1FFC7;
+	content: "\25E5";
+	position: absolute;
+	top: 0;
+	left: -0.5em;
+	font-size: 2.5em;
+}
+
+.msg.vote > div {
+	position: absolute;
+	top: 0;
+	width: 50%!important;
+	height: 100%;
+	border-radius: inherit;
+	opacity: 0.6;
+}
+
+.msg.vote > div, .msg_right.vote::before {
+	opacity: 0.7;
+}
+
+.msg_right.vote::before {
+	color: green;
+}
+
+.msg.vote > div:nth-of-type(1) {
+	background-color: green;
+	left: 0;
+	border-bottom-right-radius: 0;
+	border-top-right-radius: 0;
+}
+
+
+
+.msg.vote > div:nth-of-type(2) {
+	background-color: red;
+	right: 0;
+	border-bottom-left-radius: 0;
+}
+
+.actionpane {
+	margin-bottom: 1.5em;
+	min-height: 100%;
+	display: none;
+}
+
+#login_page {
+	display: block;
+	background-color: white;
+
+}
+
+.centered_buttons {
+	width: fit-content;
+	display: inline-block;
+}
+
+.centered_buttons > div {
+	text-align: center;
+}
+
+#login_page {
+	text-align: center;
+}
+
+.default_button {
+	background-color: #42d9f4;
+}
+
+.button:active {
+	background-color: blue!important;
+}
+
+.config_screen input:not([type='radio']){
+	width: 100%;
+}
+
+.config_screen {
+	background-color: white;
+	text-align: center;
+	padding: 1em 2em 1em 2em;
+}
+
+input[type='text'], input[type='email'], input[type='password']{
+	border: 1px black solid;
+}
+
+fieldset, input[type='text'], input[type='email'], input[type='password']{
+	border-radius: 0.4em;
+	padding: 0.4em;
+	margin: 0.2em 0 0.2em 0;
+}
+
+
+#new_account input.l2 {
+	width: 49.6%;
+	float: left;
+}
+
+#new_account input.l2 + input.l2 {
+	float: right!important;
+}
+
+
+header {
+	position: fixed;
+	top: 0;
+	width: 100%;
+	z-index: 2;
+	height: 3em;
+}
+
+header, .footer_right, #menu > div:hover {
+	background-color: green;
+	position: relative;
+	color: white;
+}
+
+#menu_btn {
+	float: right;
+	font-size: 2em;
+	margin: 0.25em 1em 0 0;
+}
+
+#menu {
+	position: absolute;
+	top: 0;
+	right: 0;
+	background-color: white;
+	width: auto;
+	color: black;
+	display: none;
+}
+
+#menu > div {
+	padding: 1em;
+
+}
+
+#textwrapper {
+	position: relative;
+	width: 80%;
+	margin-left: 10%;
+	margin-top: 3.1em;
+	text-align: center;
+}
+
+footer {
+	background-color: transparent;		
+	color: gray;
+	width: inherit;
+	position: fixed;
+	bottom: 0;
+	height: 2.5em;	
+}
+
+.footer_left {
+	width: auto;
+	overflow: hidden;
+	background-color: white;
+	border-radius: 0.8em;
+	line-height: 1em;
+	text-align: left;
+}
+
+.footer_right {
+	float:right;
+	width: 2.5em;
+	border-radius: 2.5em!important;
+	margin-left: 1.5em;
+	position: relative;
+}
+
+.footer_right > * {
+	position: absolute;
+	top: 0;
+	left: 0;
+	font-size: 2.5em;
+	line-height: 1em;
+	font-weight: bold;
+}
+
+.footer_left, .footer_right {
+	padding: 0.25em;
+	position: relative;
+}
+
+.footer_left > div {
+	padding: 0;
+	/* margin: -1.2em 0 0 3em; */
+	display: inline-block;
+	position: relative;
+	top: -0.3em;
+	left: 1em;
+}
+
+footer > * {
+	height: 100%;
+}
+
+
+.footer_left::after {
+	content: "\1F4CE  \1F4F7\00a0\00a0";
+	float:right;
+	line-height: 1.2em;
+	font-size: 1.5em;
+}
+
+.footer_left::before {
+	content: "\263A";
+	font-size:2.5em;
+	line-height: 0.6em;
+}
+
+#birthday select {
+    border-radius: 0.3em;
+    padding: 0.2em;
+}
+
+#birthday p {
+	font-weight: bold;
+	margin-bottom: 0.3em;
+}
+
+.submit_btn {
+	padding: 0.5em;
+	width: 6em;
+	border-radius: 0.3em;
+	margin: 0.5em 0 0.5em 0;
+}
+
+.invalid_input {
+	border: 1px solid red !important;
+	background-color: #FFF5F5;
+}
+
+
+</style>
+<script>
+
+
+serverAddress = "https://www.000webhost.com";
+rqEndpoint = serverAddress + "/rq.php";
+ajaxTimeout = 20000;
+maxAjaxTries = 10;
+longPressTime = 500;
+pendingAJAXCallbacks = {};
+rqId = 0;
+
+
+strings = [ "Context", "Work", "Social", "Date", "Topic", "Basketball", "Cricket", "What day is it?", "Why 1?", "Why 2?", "Why 3?"];
+
+allQuestions = {
+0 : { 
+	1 : {4 : {5 : [9,8], 6 :[8]} },
+	2 : {4 : {6 : [9,8], 6 :[8]} },
+	3 : {4 : {6 : [9,8], 6 :[8]} },
+	}
+};
+currentPath = allQuestions;
+breadcrumbs = [];
+
+
+function getFirstArrKey(arr){
+	for(var i in arr)
+		return i;
+}
+
+function writeTextNodes(path, menuNode){
+	var n, afterNode = menuNode;
+	for(var nodeID of path){
+		n = {
+			type: 'text',
+			kids: [],
+			parent: menuNode,
+			nodeID: nodeID,
+			path: path[nodeID],
+		};
+		n.el = writeItem(strings[nodeID], n, false, itemSel, afterNode);
+		createLongPressHandler(n.el);
+		menuNode.kids.push(n);
+		afterNode = n;
+	}
+}
+
+
+function writeMenuAndOptions(path, parentNode){
+	
+	if(path.length > 0)
+		return writeTextNodes(path, parentNode);
+		
+	var catLabel = getFirstArrKey(path);
+		
+	var menuDiv = writeItem(strings[catLabel], path[catLabel], true, itemSel, parentNode);
+	var menuPath = path[catLabel];
+		
+	var menuNode = {
+		type: 'cat-unselected',
+		kids: [],
+		parent: parentNode,
+		nodeID: nodeID,
+		path: path, //menuPath,
+		el: menuDiv
+	};
+	
+	menuDiv.node = menuNode;
+	if(parentNode != null)
+		parentNode.kids.push(menuNode);
+
+	var nodeID, nodeDiv = menuDiv;
+	var n = menuNode;
+	for(var nodeID in menuPath){
+		var nodePath = menuPath[nodeID];
+		nodeDiv = writeItem(strings[nodeID], nodePath, false, itemSel, n);
+		n = {
+			type: 'option',
+			kids: [],
+			parent: menuNode,
+			nodeID: nodeID,
+			path: nodePath,
+			el: nodeDiv
+		};
+		nodeDiv.node = n;
+		menuNode.kids.push(n);
+	}
+}
+
+function createLongPressHandler(el){
+	var timer = null;
+	
+	el.onmousedown = function(ev){
+		var moved = false;
+		el.onmouseup = el.onmousemove = function(ev){
+			if(!moved) // workaround for bug https://bugs.chromium.org/p/chromium/issues/detail?id=161464
+				return moved = true;
+			clearHandlers();
+			clearTimeout(timer);
+		}
+		timer = setTimeout(function(){
+			clearHandlers();
+			setVote();			
+		}, longPressTime);
+	};
+	
+	function clearHandlers(){
+		el.onmouseup = el.onmousemove = function(ev){};
+	}
+	
+
+	function setVote(){
+		el.classList.add('vote'); 
+		el.appendChild(document.createElement('div'));
+		el.appendChild(document.createElement('div'));
+	}
+
+}
+
+
+function itemSel(ev){
+	var node = ev.currentTarget.node;
+	switch(node.type){
+		case 'cat-unselected':
+			break;
+		case 'option':
+			for(var i in node.parent.kids)
+				node.parent.kids[i].el.remove();
+			node.parent.kids = [node];
+		
+			node.el.remove();
+			node.el = null;
+			node.parent.el.innerHTML += ": " + strings[node.nodeID];
+			node.parent.type = 'cat-selected';
+			//node.parent.kids = node.kids;
+			writeMenuAndOptions(node.path, node.parent)
+			break;
+		case 'text':
+		// todo
+			break;
+		case 'cat-selected':
+			killFamily(node);
+			
+			writeMenuAndOptions(node.path, node.parent);
+			break;
+	}
+}
+
+function killFamily(node){
+	if(node.kids != null)
+		for(var n of node.kids)
+			killFamily(n);
+	node.kids = null;
+	if(('el' in node) && (node.el != null))
+		node.el.remove();
+}
+
+
+function writeItem(text, node, left, _onclick, afterNode){
+	var div = document.createElement('div');
+	div.classList.add('msg');
+	div.classList.add(left ? 'msg_left' : 'msg_right');
+	div.innerHTML = text;
+	div.onclick = _onclick;
+	div.node = node;
+	if((afterNode == null) || (afterNode.el == null))
+		textpane.appendChild(div); 
+	else
+		afterNode.el.insertAdjacentElement('afterend', div);
+
+	return div;
+}
+
+function menu_select(ev){
+	console.log("clicked");
+	var menu = document.getElementById('menu');
+	document.body.addEventListener('mousedown', function(ev){
+		menu.style.display = 'none';
+		document.body.removeEventListener('mousedown', arguments.callee);
+		menu.parentNode.removeEventListener('mousedown', stopMouseDown);
+	});
+	
+	function stopMouseDown(ev){
+		ev.stopPropagation();
+	}
+	
+	menu.parentNode.addEventListener('mousedown', stopMouseDown);
+	menu.style.display = 'block';
+	
+}
+
+window.onload  = function(){ //test code
+	hideEl = document.getElementById('hide');
+	textpane = document.getElementById('textpane'); // must retain this 
+	document.getElementById('menu_btn').onclick = menu_select;	
+	writeMenuAndOptions(allQuestions, null);
+	initBirthday(); // todo move this somewhere else
+	for(let b of document.getElementsByClassName('submit_btn'))
+		b.onclick = submitData;
+	initInputCheckers();
+}
+
+
+function dispatchRequests(rqs){
+	var rqsM = {};
+	var d;
+	for(let rq of rqs){
+		if('data' in rq){
+			d = {type: rq.type, data: rq.data, id: rqId};
+			rq.data = null; //reclaim space
+		}
+		else
+			d = {type: rq.type, id: rqId};
+		rqsM[rqId] = d;
+		pendingAJAXCallbacks[rqId] = rq.callback;
+		rqId++;
+	}
+	
+	function callbackAll(data){
+		for(rqid in data){ // todo: add error handling code
+			if(!(rqid in pendingAJAXCallbacks)){
+				sLog("Error: No callback found for rqId:" + rqid);
+				continue;
+			}
+			if(('deferred' in data) && deferred.data) // data to be returned in future request
+				continue;
+			pendingAJAXCallbacks[rqid](data[rqid]);
+			delete pendingAJAXCallbacks[rqid]; // mark as having been run
+		}
+		for(rqid in pendingAJAXCallbacks){
+			sLog("Error: No server response/deferral for rqId: " + rqid + ", deleting.");
+			delete pendingAJAXCallbacks[rqid];
+		}
+	}
+	post(rqEndpoint, rqSM, { success: callbackAll });
+}
+
+function sLog(msg){
+	console.log("Error: " + msg);
+}
+
+function post(url, data, callbacks){
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-type", "application/json");
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4 && xhr.status === 200) {
+			try {
+				var data = JSON.parse(xhr.responseText); // TODO put in some error checking here
+			}
+			catch(e){
+				sLog("Error parsing JSON response. Raw: " + xhr.responseText);
+			}
+			callbacks.success(data);
+		}
+	};
+	xhr.timeout = ajaxTimeout;
+	var tries = 0;
+	xhr.ontimeout = function(){
+		if( tries++ < maxAjaxTries ){
+			sLog("Request timed out, retrying(" + tries + ")");
+			xhr.send( json );
+		}
+		else {
+			sLog("Exceeded max ajax retries (" + tries + "), aborting request");
+			if('fail' in callbacks)
+				callbacks.fail();
+		}
+	}
+	try {
+		var json = JSON.stringify(data);
+	}
+	catch(e){
+		sLog("Error encoding string: " + data + " Error message: " + e.message);
+		return null;
+	}
+
+	xhr.send( json );
+}
+
+function lenMonth(m, y) {
+    var d = new Date(y, m, 31).getDate();
+	return d == 31 ? 31 : 31 - d;
+}
+
+function setDaysForMonth(b){
+	var nDays = lenMonth(b.elements['month'].value, b.elements['year'].value);
+	var days = b.elements['day'].children;
+	var cVal = b.elements['day'].value;
+	if(nDays > days.length)
+		for(var i = days.length; i  < nDays; i++)
+			b.elements['day'].appendChild(hideEl.children[30 - i]);
+	else {
+		for(var i = days.length - 1; i >= nDays; i--)
+			hideEl.appendChild(days[i]);
+		if(cVal > days.length){
+			b.elements['day'].value = 0;
+			return b.elements['day'].classList.add('invalid_input');
+		}
+	}
+	b.elements['day'].value = cVal;
+	b.elements['day'].classList.remove('invalid_input');
+}
+
+
+function initBirthday(){
+	var y = new Date(Date.now()).getFullYear();
+	var maxYear = y - 12, minYear = y - 100;
+	var b = document.forms['new_account'];
+	
+	for(var i = maxYear; i >= minYear; i--){ // year
+		var o = document.createElement('option');
+		o.value = i;
+		o.innerHTML = i;
+		b.elements['year'].append(o);
+	}
+	
+	for(var i = 1; i <= 31; i++){ // day of month
+		var o = document.createElement('option');
+		o.value = i;
+		o.innerHTML = i;
+		b.elements['day'].append(o);
+	}
+	
+	var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+	for(var locale = getLocale(), d = new Date(), i = 0; i < 12; i++){
+		var o = document.createElement('option');
+		o.value = i;
+		d.setMonth(i);
+		o.innerHTML = d.toLocaleString(locale, { month: "short" }); // internationalise
+		b.elements['month'].append(o);
+	}
+	
+	b.onchange = function(ev){
+		setDaysForMonth(b);
+	};
+	
+	setDaysForMonth(b);
+}
+
+function getLocale(){
+	return 'languages' in navigator ? navigator.languages[0] : navigator.language;
+}
+
+function getFormData(btn){
+	var data = {}, valid = true, invalidNames = {};
+	
+	while(btn.tagName != 'FORM')
+		btn = btn.parentNode;
+	for(var f of document.forms[btn.name].elements){
+		if(!('name' in f))
+			continue;
+		if('checkValidity' in f){
+			if(f.checkValidity()){
+				f.classList.remove('invalid_input');				
+			}
+			else {
+				valid = false;
+				f.classList.add('invalid_input');
+				invalidNames[f.name] = true;
+				continue;
+			}
+		}
+		
+		data[f.name] = f.value;
+	}
+	
+	for(var n in invalidNames)
+		for(var el of document.getElementsByName(n))
+			el.classList.add('invalid_input');
+	
+	var fData = {};
+	fData[btn.name] = fData;
+	return valid ? fData : null;
+}
+
+function submitData(){
+	var i = getFormData(this);
+	window.tst = i; // todo debug only
+}
+
+function chkInputField(ev){
+	if(!('checkValidity' in ev.target))
+		return;
+
+	var els = document.getElementsByName(ev.target.name);
+	if(ev.target.checkValidity())
+		for(var el of els)
+			el.classList.remove('invalid_input');
+	else
+		for(var el of els)
+			el.classList.add('invalid_input');
+}
+
+function initInputCheckers(){
+	for(let f of document.forms){
+		f.addEventListener('change', chkInputField);
+		f.addEventListener('paste', chkInputField);
+		f.addEventListener('keypress', chkInputField);
+		f.addEventListener('focusout', chkInputField);
+	}
+}
+
+</script>
+
+</head>
+<body>
+<header><span class="left">Messages</span><div class='button' id='menu_btn'>&#x22ee;
+<div id='menu'>
+<div id='login'>Login</div>
+<div id='logout'>Logout</div>
+<div id='settings'>Settings</div>
+</div>
+
+</div>
+</header>
+
+<div class='actionpane' id='settings'>123456</div>
+<div id='textwrapper'>
+<div id='textpane' class='actionpane'>
+</div>
+<footer><div class='footer_right'><span>&#x1f399;<span></div><div class='footer_left'><div>Type your text here</div></div></footer>
+</div>
+
+
+<div class='config_screen' id='login_page'>
+<form name='login_page'>
+<input name='login_name' type='email' required placeholder="example@me.com"></input><br/>
+<input name='password' type='password' required placeholder="Password"></input><br/>
+<div class='centered_buttons'>
+<div class='button default_button'>Login</div>
+<div class='button'>Create Account</div>
+<div class='button'>Forgot Password</div>
+</div>
+</form>
+</div>
+
+
+<div class='config_screen input_container' id='new_account'>
+<form name='new_account'>
+<input required placeholder='First Name' name='first_name' type='text'></input><br>
+<input required placeholder='Surname' name='surname' type='text'></input><br/>
+<input required placeholder='example@me.com' name='email' type='email'></input><br/>
+
+<fieldset required class='radio_container' name='gender'>
+<input required type="radio" name="gender" id='male' value="male">
+<label for="male">Male</label>
+<input required type="radio" name="gender" id='female' value="female">
+<label for="female">Female</label>
+<input required type="radio" name="gender" id='other' value="other">
+<label for="other">Other</label>
+</fieldset>
+
+<p>Birthday</p>
+<span id='hide'></span>
+<div id='birthday'>
+<select name='day'>
+</select>
+<select name='month'>
+</select>
+<select name='year'>
+</select>
+</div>
+<div class='submit_btn button default_button'>Submit</div>
+</form>
+
+</div>
+
+<div class='config_screen input_container' id='reset_password'>
+<form name='reset_password'>
+Please enter your email address<br/>
+<input name='login_name' type='email' required placeholder="example@me.com"></input>
+<div class='submit_btn button default_button'>Submit</div>
+</form>
+</div>
+
+
+</body>
+</html>
