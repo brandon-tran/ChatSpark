@@ -301,9 +301,9 @@ body:not([data-logged-in]) #logout {
 }
 
 #textpane {
-	padding: 2em 1em 0 1em;
+	padding: 2em 1.5em 0 1.5em;
 }
-
+/*
 footer {
 	background-color: transparent;		
 	color: gray;
@@ -334,8 +334,8 @@ footer {
 
 .footer_right > * {
 	position: absolute;
-	top: 0;
-	left: 0;
+	top: -0.08em;
+	left: 0.125em;
 	font-size: 2.5em;
 	line-height: 1em;
 	font-weight: bold;
@@ -351,7 +351,8 @@ footer {
 	display: inline-block;
 	position: relative;
 	top: -66%;
-	left: 3em;
+	left: 2em;
+	font-size: 1.5em;
 }
 
 footer > * {
@@ -370,6 +371,24 @@ footer > * {
 	content: "\263A";
 	font-size:2.5em;
 	line-height: 0.6em;
+}*/
+
+footer {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	background-color: white;
+	text-align: left;
+	color: gray;
+	padding: 0.25em 1em 0.25em 1em;
+	line-height: 1.5em;
+}
+
+footer div {
+	margin: 0.5em 0 0.5em 0;
+	font-size:1.5em;
+	letter-spacing: 0.5em;
 }
 
 #birthday select {
@@ -849,7 +868,13 @@ function clearUserData(){
 <div id='textwrapper' class="screen">
 <div id='textpane'>
 </div>
+<!--
 <footer><div class='footer_right'><span>&#x1f399;<span></div><div class='footer_left'><div>Type your text here</div></div></footer>
+-->
+<footer>
+Type a message...<br>
+<div>&#x1f3a8; &#x1f4f7; &#x1f3a5; &#x1f50d; </div>
+</footer>
 </div>
 
 
@@ -911,7 +936,6 @@ Settings here<br/>
 <div class='submit submit_btn button default_button'>Submit</div>
 </form>
 </div>
-
 
 </body>
 </html>
