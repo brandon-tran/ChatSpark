@@ -201,9 +201,13 @@ header {
 	height: 3em;
 }
 
-header, .footer_right, #menu > div:hover {
+.screen {
+	margin-top: 3em;
+	display: none;
+}
+
+header, #menu > div:hover {
 	background-color: green;
-	position: relative;
 	color: white;
 }
 
@@ -217,9 +221,7 @@ header > div {
 	font-size: 2em;
 }
 
-.screen {
-	display: none;
-}
+
 
 body.settings_page #settings_page, body.login_page:not([data-logged-in]) #login_page, body.new_account:not([data-logged-in]) #new_account, body.reset_password:not([data-logged-in]) #reset_password {
 	display: block;
@@ -428,17 +430,45 @@ pendingAJAXCallbacks = {};
 rqId = 0;
 
 
-strings = [ "Context", "Work", "Social", "Date", "Topic", "Basketball", "Cricket", "What day is it?", "Why 1 sdf sdiusdf zuhzsdf uzsd fiu iuoiuzoiub sd07h zs 8zsdf yb zshbdfsdf?", "Why 2?", "Why 3?"];
+sampleStrings = [ "Context", "Work", "Social", "Date", "Topic", "Basketball", "Cricket", "What day is it?", "Why 1 sdf sdiusdf zuhzsdf uzsd fiu iuoiuzoiub sd07h zs 8zsdf yb zshbdfsdf?", "Why 2?", "Why 3?"];
 
-allQuestions = {
+
+sampleQuestions = {
 0 : { 
-	1 : {4 : {5 : [9,8], 6 :[8]} },
+	1 : {4 : {5 : [9,8,8,8,8,9,8], 6 :[8]} },
 	2 : {4 : {6 : [9,8], 6 :[8]} },
 	3 : {4 : {6 : [9,8], 6 :[8]} },
 	}
 };
-currentPath = allQuestions;
-breadcrumbs = [];
+
+sampleData = {
+	user: {
+	},
+	userquestions: sampleQuestions,
+	questions: sampleStrings
+};
+
+localStorage.data = JSON.stringify(sampleData);
+
+try {
+	qData = JSON.parse(localStorage.data);
+}
+catch(e){
+	localStorage.clear();
+	qData = {};
+}
+
+currentPath = qData.userquestions;
+
+function mergeAssocArrays(arr1, arr2){
+	for(var i in arr2)
+		if(i in arr1){
+			if(Array.isArray(arr1[i]))
+				mergeArrays(arr1[i], arr2[i]);
+		}			
+		else
+			arr1[i] = arr2[i];
+}
 
 
 function getFirstArrKey(arr){
@@ -456,7 +486,7 @@ function writeTextNodes(path, menuNode){
 			nodeID: nodeID,
 			path: path[nodeID],
 		};
-		n.el = writeItem(strings[nodeID], n, false, itemSel, afterNode);
+		n.el = writeItem(qData.questions[nodeID], n, false, itemSel, afterNode);
 		createLongPressHandler(n.el);
 		menuNode.kids.push(n);
 		afterNode = n;
@@ -471,7 +501,7 @@ function writeMenuAndOptions(path, parentNode){
 		
 	var catLabel = getFirstArrKey(path);
 		
-	var menuDiv = writeItem(strings[catLabel], path[catLabel], true, itemSel, parentNode);
+	var menuDiv = writeItem(qData.questions[catLabel], path[catLabel], true, itemSel, parentNode);
 	var menuPath = path[catLabel];
 		
 	var menuNode = {
@@ -491,7 +521,7 @@ function writeMenuAndOptions(path, parentNode){
 	var n = menuNode;
 	for(var nodeID in menuPath){
 		var nodePath = menuPath[nodeID];
-		nodeDiv = writeItem(strings[nodeID], nodePath, false, itemSel, n);
+		nodeDiv = writeItem(qData.questions[nodeID], nodePath, false, itemSel, n);
 		n = {
 			type: 'option',
 			kids: [],
@@ -548,7 +578,7 @@ function itemSel(ev){
 		
 			node.el.remove();
 			node.el = null;
-			node.parent.el.innerHTML += ": " + strings[node.nodeID];
+			node.parent.el.innerHTML += ": " + qData.questions[node.nodeID];
 			node.parent.type = 'cat-selected';
 			//node.parent.kids = node.kids;
 			writeMenuAndOptions(node.path, node.parent)
@@ -618,8 +648,9 @@ function menu_select(ev){
 window.onload  = function(){ //test code
 	hideEl = document.getElementById('hide');
 	textpane = document.getElementById('textpane'); // must retain this 
-	writeMenuAndOptions(allQuestions, null);
-	initBirthday(); // todo move this somewhere else
+	writeMenuAndOptions(qData.userquestions, null);
+	document.getElementById('new_account')['data-onload'] = initBirthday;
+	
 	for(let b of document.getElementsByClassName('submit'))
 		b.onclick = submitData;
 	initListeners();
@@ -841,6 +872,11 @@ function ldPage(ev){
 	console.log('ldPage()');
 	var pgId = ev.target.getAttribute('data-link');
 	document.body.className = pgId;
+	var el = document.getElementById(pgId);
+	if('data-onload' in el){
+		el['data-onload'].call(el);
+		el.removeAttribute('data-onload');
+	}
 	for(let e of document.querySelectorAll("input[type='email'].invalid_input, input[type='text'].invalid_input, fieldset.radio_container.invalid_input"))
 		if(!('value' in e) || (e.value.length==0))
 			e.classList.remove('invalid_input');
