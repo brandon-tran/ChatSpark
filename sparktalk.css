@@ -18,6 +18,12 @@ body {
 
 }
 
+@media screen and (min-width: 720px) {
+    body {
+        font-size: 22px!important;
+    }
+}
+
 fieldset {
 	border: none;
 }
