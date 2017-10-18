@@ -2,7 +2,7 @@
 <link rel="stylesheet" type="text/css" href="sparktalk.css" />
 <script>
 
-serverAddress = "https://www.000webhost.com";
+serverAddress = "http://127.0.0.1/CITS3200";
 rqEndpoint = serverAddress + "/rq.php";
 ajaxTimeout = 20000;
 maxAjaxTries = 10;
@@ -382,7 +382,7 @@ function dispatchRequests(rqs){
 			delete pendingAJAXCallbacks[rqid];
 		}
 	}
-	post(rqEndpoint, rqSM, { success: callbackAll });
+	post(rqEndpoint, rqsM, { success: callbackAll });
 }
 
 function sLog(msg){
@@ -547,7 +547,7 @@ function getFormData(btn){
 			el.classList.add('invalid_input');
 	
 	var fData = {};
-	fData[btn.name] = fData;
+	fData[btn.name] = data;
 	return valid ? fData : null;
 }
 
