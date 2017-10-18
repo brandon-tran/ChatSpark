@@ -1,4 +1,13 @@
 <?php
+
+function init(){
+	init_mysql();
+}
+
+function install(){ // run this once on a new machine
+	create_map_id_autoincrement();	
+}
+
 function init_mysql(){
 	global $mysql_servername, $mysql_username, $mysql_password, $mysql_conn, $mysql_db;
 	
@@ -6,7 +15,6 @@ function init_mysql(){
 	if ($mysql_conn->connect_error) 
 		die(dLog("Connection failed: " . $mysql_conn->connect_error));
 	dLog("Connected successfully to MySql server: $mysql_servername");	
-	create_map_id_autoincrement();
 }
 
 function get_db_rows($sql){

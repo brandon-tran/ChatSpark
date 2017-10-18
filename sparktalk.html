@@ -2,13 +2,13 @@
 <link rel="stylesheet" type="text/css" href="sparktalk.css" />
 <script>
 
-serverAddress = "http://127.0.0.1/CITS3200";
+serverAddress = "http://127.0.0.1/sparktalk";
 rqEndpoint = serverAddress + "/rq.php";
 ajaxTimeout = 20000;
 maxAjaxTries = 10;
 longPressTime = 500;
 pendingAJAXCallbacks = {};
-rqId = 0;
+rqId = 1;  // rqId=0 reserved for system messages
 errNoticeTimeout = 3000;
 
 function initTestQuestions(){
@@ -386,7 +386,7 @@ function dispatchRequests(rqs){
 }
 
 function sLog(msg){
-	console.log("Error: " + msg);
+	console.log(msg);
 }
 
 function get(url, callbacks){
@@ -423,6 +423,9 @@ function post(url, data, callbacks){
 		if (xhr.readyState === 4 && xhr.status === 200) {
 			try {
 				var data = JSON.parse(xhr.responseText); // TODO put in some error checking here
+				sLog("Successfully parsed incoming JSON data. Data:");
+				sLog(data);
+				sLog("Raw: " + xhr.responseText);
 			}
 			catch(e){
 				sLog("Error parsing JSON response. Raw: " + xhr.responseText);
@@ -519,12 +522,16 @@ function getLocale(){
 	return 'languages' in navigator ? navigator.languages[0] : navigator.language;
 }
 
-function getFormData(btn){
-	var data = {}, valid = true, invalidNames = {};
-	
+function getForm(btn){
 	while(btn.tagName != 'FORM')
 		btn = btn.parentNode;
-	for(var f of document.forms[btn.name].elements){
+	return btn;
+}
+
+function getFormData(frm){
+	var data = {}, valid = true, invalidNames = {};
+
+	for(var f of document.forms[frm.name].elements){
 		if(!('name' in f))
 			continue;
 		if('checkValidity' in f){
@@ -547,7 +554,7 @@ function getFormData(btn){
 			el.classList.add('invalid_input');
 	
 	var fData = {};
-	fData[btn.name] = data;
+	fData[frm.name] = data;
 	return valid ? fData : null;
 }
 
@@ -573,17 +580,17 @@ function resetForm(f){
 }
 
 function submitData(){
-	var f = this, d = getFormData(f);
+	var frm = getForm(this), d = getFormData(frm);
 	
 	if(d==null){
 		this.classList.add('error');
 		setTimeout(function(){
-			resetForm(f);
+			resetForm(frm);
 		}, errNoticeTimeout);
 		return;
 	}
 	dispatchRequests([{
-		type: f.getAttribute('data-type'),
+		type: frm.getAttribute('data-formtype'),
 		data:	d,
 		id: rqId++
 	}]);
