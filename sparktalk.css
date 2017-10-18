@@ -14,11 +14,11 @@ body {
 	background-image:url(128-137.jpg);
 	background-repeat:repeat;
 	color: black;
-	font-size: 3vw;
+	font-size: 5vw;
 
 }
 
-@media screen and (min-width: 720px) {
+@media screen and (min-width: 440px) {
     body {
         font-size: 22px!important;
     }
