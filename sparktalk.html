@@ -10,6 +10,7 @@ longPressTime = 500;
 pendingAJAXCallbacks = {};
 rqId = 1;  // rqId=0 reserved for system messages
 errNoticeTimeout = 3000;
+commonSalt = [52, 114, 250, 27, 157, 4, 78, 96, 51, 65, 236, 143, 107, 225, 131, 247, 20, 136, 102, 37, 253, 125];
 
 function initTestQuestions(){
 	var sampleStrings = [ "Context", "Work", "Social", "Date", "Topic", "Basketball &#x1F3C0;", "Cricket", "What day is it?", "Why 1 sdf sdiusdf zuhzsdf uzsd fiu iuoiuzoiub sd07h zs 8zsdf yb zshbdfsdf?", "Why 2?", "Why 3?"];
@@ -531,9 +532,6 @@ function getForm(btn){
 function getFormData(frm){
 
 	var promises = [];
-	var resolve, promise = new Promise((resolve_, reject) => { 
-		resolve = resolve_;
-	}); 
 	
 	var data = {}, valid = true, invalidNames = {};
 
@@ -555,58 +553,33 @@ function getFormData(frm){
 		data[inp.name] = inp.value;
 		var onsb = inp.getAttribute('data-onsubmit'); // must return Promise
 		if(onsb)
-			promises.push( window[onsb](data[inp.name]) );
+			promises.push( window[onsb](data, inp.name) );
 	}
 	
-	for(var n in invalidNames)
+	/*for(var n in invalidNames)
 		for(var el of document.getElementsByName(n))
-			el.classList.add('invalid_input');
-	
-	var fData = {};
-	fData[frm.name] = data;
-	if(!valid)
-		fData = null;
+			el.classList.add('invalid_input');*/
 		
-	Promise.all(promises).then(function(){
-		resolve(fData);
+	return Promise.all(promises).then(function(){
+		return  valid ? {
+			type: frm.getAttribute('data-formtype'),
+			data: data
+		} : null;
 	});
-	
-	return promise;
 }
 
-function initHashLibs(){
-	if('initHash' in window)
-		return Promise.resolve();
-	
-	var p1 = new Promise((res, rej) => {
-		var s = document.createElement('script');
-		s.type="text/javascript";
-		s.src = 'text-encoder-lite.min.js';
-		document.head.appendChild(s);
-		s.onload = res;
-	});
-	
-	var p2 = new Promise((res, rej) => {
-		s = document.createElement('script');
-		s.type="text/javascript";
-		s.src = 'base64js.min.js';
-		document.head.appendChild(s);
-		s.onload = res;
-	});
-	
-	return new Promise((res, rej) => { Promise.all([p1, p2]).then = () => { window.initHash = true; res(); } });
+
+function mkScript(src){
+	var s = document.createElement('script');
+	s.src = src;
+	document.head.appendChild(s);
+	return s;
 }
 
-function hash(val){
-	var promHashLibs = initHashLibs();
-	var buffer = new TextEncoder("utf-8").encode(val);
-	var promCrypto = crypto.subtle.digest("SHA-256", buffer);
-	return new Promise((res, rej) => {
-		Promise.all([promHashLibs, promCrypto]).then((hash) => {
-			var encoded = new TextEncoderLite('utf-8').encode(str);        
-			var b64Encoded = base64js.fromByteArray(encoded);
-			res(b64Encoded);
-		});
+function hash(arr, key){
+	return crypto.subtle.digest("SHA-256", new TextEncoderLite().encode(arr[key].concat(commonSalt))).then(
+	(hash) =>  { 
+		return arr[key] = base64js.fromByteArray(new Uint8Array(hash));
 	});
 }
 
@@ -682,10 +655,16 @@ function initListeners(){
 	});
 
 	document.getElementById('menu_btn').addEventListener('click', menu_select);
+	
 }
 
 function ldPage(ev){
 	console.log('ldPage()');
+	if(typeof TextEncoderLite == 'undefined'){
+		mkScript('base64js.min.js');
+		mkScript('text-encoder-lite.js');
+	}
+	
 	var pgId = ev.target.getAttribute('data-link');
 	document.body.className = pgId;
 	var el = document.getElementById(pgId);
