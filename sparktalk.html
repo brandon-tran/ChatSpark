@@ -529,12 +529,18 @@ function getForm(btn){
 }
 
 function getFormData(frm){
+
+	var promises = [];
+	var resolve, promise = new Promise((resolve_, reject) => { 
+		resolve = resolve_;
+	}); 
+	
 	var data = {}, valid = true, invalidNames = {};
 
-	inpor(let inp of document.inporms[frm.name].elements){
+	for(let inp of document.forms[frm.name].elements){
 		if(!('name' in inp))
 			continue;
-		if('checkValidity' in inp){
+		/*if('checkValidity' in inp){
 			if(inp.checkValidity()){
 				inp.classList.remove('invalid_input');				
 			}
@@ -544,12 +550,12 @@ function getFormData(frm){
 				invalidNames[inp.name] = true;
 				continue;
 			}
-		}
+		}*/
 		
 		data[inp.name] = inp.value;
-		var onsb = inp.getAttribute('data-onsubmit');
+		var onsb = inp.getAttribute('data-onsubmit'); // must return Promise
 		if(onsb)
-			data[inp.name] = eval(onsb + '(' + data[inp.name] + ')');
+			promises.push( window[onsb](data[inp.name]) );
 	}
 	
 	for(var n in invalidNames)
@@ -558,42 +564,50 @@ function getFormData(frm){
 	
 	var fData = {};
 	fData[frm.name] = data;
-	return valid ? fData : null;
-}
-
-function encB64(n){
-	if(n <= 25)
-		return n + 65;
-	if(n <= 51)
-		return n + 71;
-	if(n <= 61)
-		return n - 4;
-	if(n==62)
-		return 19;
-	if(n==63)
-		return 16;
-}
-
-function encode3Bytes(bin, i, bout){
+	if(!valid)
+		fData = null;
+		
+	Promise.all(promises).then(function(){
+		resolve(fData);
+	});
 	
+	return promise;
 }
 
-function toB64(ba){
-	if(ba.length != 43){
-		sLog("Error: Wrong length");
-		return null;
-	}
-	for(var i = 0; i < 42; i++)
-		
-		
+function initHashLibs(){
+	if('initHash' in window)
+		return Promise.resolve();
+	
+	var p1 = new Promise((res, rej) => {
+		var s = document.createElement('script');
+		s.type="text/javascript";
+		s.src = 'text-encoder-lite.min.js';
+		document.head.appendChild(s);
+		s.onload = res;
+	});
+	
+	var p2 = new Promise((res, rej) => {
+		s = document.createElement('script');
+		s.type="text/javascript";
+		s.src = 'base64js.min.js';
+		document.head.appendChild(s);
+		s.onload = res;
+	});
+	
+	return new Promise((res, rej) => { Promise.all([p1, p2]).then = () => { window.initHash = true; res(); } });
 }
 
 function hash(val){
+	var promHashLibs = initHashLibs();
 	var buffer = new TextEncoder("utf-8").encode(val);
-	return crypto.subtle.digest("SHA-256", buffer).then(function (hash) {
-	return hex(hash);
-});
-
+	var promCrypto = crypto.subtle.digest("SHA-256", buffer);
+	return new Promise((res, rej) => {
+		Promise.all([promHashLibs, promCrypto]).then((hash) => {
+			var encoded = new TextEncoderLite('utf-8').encode(str);        
+			var b64Encoded = base64js.fromByteArray(encoded);
+			res(b64Encoded);
+		});
+	});
 }
 
 function setDefEmail(){
@@ -618,25 +632,29 @@ function resetForm(f){
 }
 
 function submitData(){
-	var frm = getForm(this), d = getFormData(frm);
+	var frm = getForm(this);
+	var prm = getFormData(frm);
+	prm.then( (d) => {
 	
-	if(d==null){
-		this.classList.add('error');
-		setTimeout(function(){
-			resetForm(frm);
-		}, errNoticeTimeout);
-		return;
-	}
-	dispatchRequests([{
-		type: frm.getAttribute('data-formtype'),
-		data:	d,
-		id: rqId++
-	}]);
+		if(d==null){
+			this.classList.add('error');
+			setTimeout(function(){
+				resetForm(frm);
+			}, errNoticeTimeout);
+			return;
+		}
+		dispatchRequests([{
+			type: frm.getAttribute('data-formtype'),
+			data:	d,
+			id: rqId++
+		}]);
+
+	} );
 }
 
 function chkInputField(ev){
-	if(!('checkValidity' in ev.target))
-		return;
+	/*if(!('checkValidity' in ev.target))
+		return;*/
 
 	var els = document.getElementsByName(ev.target.name);
 	if(ev.target.checkValidity())
