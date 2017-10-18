@@ -1,0 +1,732 @@
+<html><head>
+<link rel="stylesheet" type="text/css" href="sparktalk.css" />
+<script>
+
+serverAddress = "https://www.000webhost.com";
+rqEndpoint = serverAddress + "/rq.php";
+ajaxTimeout = 20000;
+maxAjaxTries = 10;
+longPressTime = 500;
+pendingAJAXCallbacks = {};
+rqId = 0;
+errNoticeTimeout = 3000;
+
+function initTestQuestions(){
+	var sampleStrings = [ "Context", "Work", "Social", "Date", "Topic", "Basketball &#x1F3C0;", "Cricket", "What day is it?", "Why 1 sdf sdiusdf zuhzsdf uzsd fiu iuoiuzoiub sd07h zs 8zsdf yb zshbdfsdf?", "Why 2?", "Why 3?"];
+	var sampleQuestions = {
+		0 : { 
+			1 : {4 : {5 : [9,8,8,8,8,9,8], 6 :[8]} },
+			2 : {4 : {6 : [9,8], 6 :[8]} },
+			3 : {4 : {6 : [9,8], 6 :[8]} },
+			}
+		};
+
+	var sampleData = {
+		user: {
+		},
+		userQuestions: sampleQuestions,
+		strings: sampleStrings,
+	};
+
+	localStorage.data = JSON.stringify(sampleData);
+}
+
+initTestQuestions(); // todo debug only
+
+try {
+	qData = JSON.parse(localStorage.data);
+}
+catch(e){
+	localStorage.clear();
+	qData = {};
+}
+
+function authenticate(){
+	
+}
+
+function getUpdates(){
+	get(serverAddress, function(data){
+		
+	
+	
+	});
+
+}
+
+function updateDictionary(url){
+
+
+}
+
+
+
+currentPath = qData.userQuestions;
+
+function mergeAssocArrays(arr1, arr2){
+	for(var i in arr2)
+		if(i in arr1){
+			if(Array.isArray(arr1[i]))
+				mergeArrays(arr1[i], arr2[i]);
+		}			
+		else
+			arr1[i] = arr2[i];
+}
+
+
+function getFirstArrKey(arr){
+	for(var i in arr)
+		return i;
+}
+
+function getLiveFeed(parentNode){ 
+	var n = {
+		type: 'live-unselected',
+		kids: [],
+		parent: parentNode.kids[0],
+		nodeID: -1,
+		path: null,
+	};
+	parentNode.kids[0].kids = [n];
+	n.el = writeItem("Live Feed", n, false, liveFeedSel, parentNode);
+	return n;
+	
+	function liveFeedSel(ev){
+		parentNode.el.innerHTML += ": Live Feed";
+		killKids(n);
+		killNode(n);
+		var topic = parentNode.kids[0].nodeID;
+		parentNode.type = 'live-selected';
+		getRSSFeed(topic, writeLiveFeedNodes);
+	}
+	
+	function writeLiveFeedNodes(titles){
+		var afterNode = parentNode;
+		for(var title of titles){
+			var ln = {
+				type: 'text',
+				kids: [],
+				parent: afterNode,
+				nodeID: -2,
+				path: null
+			};
+			ln.el = writeItem(title, ln, false, itemSel, afterNode);
+			createLongPressHandler(ln.el);
+			parentNode.kids[0].kids.push(ln);
+			afterNode = ln;
+		}
+	}
+}
+
+
+function writeTextNodes(path, menuNode){
+	menuNode = getLiveFeed(menuNode);
+		
+	var n, afterNode = menuNode;
+	for(var nodeID of path){
+		n = {
+			type: 'text',
+			kids: [],
+			parent: menuNode,
+			nodeID: nodeID,
+			path: path[nodeID],
+		};
+		n.el = writeItem(qData.strings[nodeID], n, false, itemSel, afterNode);
+		createLongPressHandler(n.el);
+		menuNode.kids.push(n);
+		afterNode = n;
+	}
+}
+
+
+rssTest = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><rss version=\"2.0\"><channel><generator>NFE/1.0</generator><title>basketball - Google News</title><link>https://news.google.coms/rss/search/section/q/basketball?ned=us&amp;hl=en</link><language>en</language><webMaster>news-feedback@google.com</webMaster><copyright>&amp;copy;2017 Google</copyright><pubDate>Sat, 14 Oct 2017 07:24:19 GMT</pubDate><lastBuildDate>Sat, 14 Oct 2017 07:24:19 GMT</lastBuildDate><image><title>basketball - Google News</title><url>https://ssl.gstatic.com/news-static/gnrss.png</url><link>https://news.google.coms/rss/search/section/q/basketball?ned=us&amp;hl=en</link></image><description>Google News</description><item><title>Bill Self more concerned about sport than potential problems for Kansas program</title><link>http://www.espn.com/mens-college-basketball/story/_/id/21013561/kansas-jayhawks-coach-bill-self-says-college-basketball-concerning-not-kansas-program</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=dJW8sU4xw7cJojM</guid><category>basketball</category><pubDate>Fri, 13 Oct 2017 21:52:29 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRR20WNW2FqPwLezKk4wL0cZ6lIA804yvS5KBBD2lpAS4KjuPb-Oa_enTpPdKoFgdKrsFTxS9Z-HA\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.espn.com/mens-college-basketball/story/_/id/21013561/kansas-jayhawks-coach-bill-self-says-college-basketball-concerning-not-kansas-program\" target=\"_blank\"&gt;Bill Self more concerned about sport than potential problems for Kansas program&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;ESPN&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/dJW8sU4xw7cJojM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>North Carolina is ready to start recruiting like a college basketball powerhouse again</title><link>https://www.sbnation.com/college-basketball/2017/10/13/16469308/north-carolina-basketball-recruiting-scandal-simi-shittu-romeo-langford-nassir-little</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=dtmabSWTAh5HOfMv3kA0mzHeAWraM</guid><category>basketball</category><pubDate>Fri, 13 Oct 2017 16:48:50 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRrzp3VKKZtjbJDOladcX_BN5gk9VjIn6rpvMnMoW8syqCvu1qn9bNYk9uJj_tSxUFhqPvA4OLfZ-o\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"https://www.sbnation.com/college-basketball/2017/10/13/16469308/north-carolina-basketball-recruiting-scandal-simi-shittu-romeo-langford-nassir-little\" target=\"_blank\"&gt;North Carolina is ready to start recruiting like a college basketball powerhouse again&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;SB Nation&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;li&gt;&lt;a href=\"https://allfortennessee.com/2017/10/13/tennessee-basketball-pearl-unc-hypocrisy/\" target=\"_blank\"&gt;Tennessee basketball: Bruce Pearl and the NCAA's hypocrisy with Vols, UNC&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;All For Tennessee&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=\"https://www.cbssports.com/college-basketball/news/north-carolina-ruling-ncaa-verdict-showcases-ineptitude-as-fbi-swoops-into-college-hoops/\" target=\"_blank\"&gt;North Carolina ruling showcases NCAA's ineptitude as FBI swoops into college hoops&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;CBSSports.com&lt;/font&gt;&lt;/li&gt;&lt;a href=\"https://news.google.com/story/dtmabSWTAh5HOfMv3kA0mzHeAWraM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>MU, KU basketball to play exhibition game for hurricane relief at Sprint Center</title><link>http://www.kshb.com/sports/mu-ku-basketball-to-play-exhibition-game-for-hurricane-relief-at-sprint-center</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=diRx5DjVcv7Z6-MGOWw8yS1ZrLqEM</guid><category>basketball</category><pubDate>Fri, 13 Oct 2017 20:00:37 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcQ59UPiFhngELKDVrusDM2Y2wPXpUhAg8OhWI6uaSz_4tvBGu5_EMa33OVM9c9szGJqfpWnzODRhpw\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.kshb.com/sports/mu-ku-basketball-to-play-exhibition-game-for-hurricane-relief-at-sprint-center\" target=\"_blank\"&gt;MU, KU basketball to play exhibition game for hurricane relief at Sprint Center&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;KSHB&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;li&gt;&lt;a href=\"http://bleacherreport.com/articles/2738558-kansas-missouri-basketball-on-oct-22-to-raise-money-for-hurricane-victims\" target=\"_blank\"&gt;Kansas, Missouri Basketball on Oct. 22 to Raise Money for Hurricane Victims&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Bleacher Report&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=\"http://www.kansas.com/sports/college/big-12/kansas-state/article178815826.html\" target=\"_blank\"&gt;Kansas State will host Missouri State in charity basketball game&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Wichita Eagle&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=\"http://www.kansascity.com/sports/college/article178729081.html\" target=\"_blank\"&gt;Border War back on: KU-Mizzou to play charity exhibition Oct. 22 at Sprint Center&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Kansas City Star&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=\"http://fox4kc.com/2017/10/13/ku-coach-bill-self-says-mu-vs-ku-basketball-game-is-going-to-happen/\" target=\"_blank\"&gt;KU coach Bill Self says MU vs. KU basketball game is 'going to happen'&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;fox4kc.com&lt;/font&gt;&lt;/li&gt;&lt;a href=\"https://news.google.com/story/diRx5DjVcv7Z6-MGOWw8yS1ZrLqEM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Louisville basketball assistant coach Kenny Johnson hires lawyer amid recruiting scandal</title><link>http://www.courier-journal.com/story/sports/college/louisville/2017/10/13/louisville-basketball-assistant-coach-kenny-johnson-hires-lawyer-amid-recruiting-scandal/763239001/</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=dEYadD_IDV8kpQM</guid><category>basketball</category><pubDate>Fri, 13 Oct 2017 22:35:00 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcRqY1B6uwUu9OPG-INnXMjzUmmMlClbc5XGu82H5yRdLJ5ZtUIzW4VVF13Uhv3mRPcp5HE-0gy4MQ\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.courier-journal.com/story/sports/college/louisville/2017/10/13/louisville-basketball-assistant-coach-kenny-johnson-hires-lawyer-amid-recruiting-scandal/763239001/\" target=\"_blank\"&gt;Louisville basketball assistant coach Kenny Johnson hires lawyer amid recruiting scandal&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;The Courier-Journal&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/dEYadD_IDV8kpQM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>2017-18 fantasy basketball rankings/tiers cheat sheets</title><link>http://www.espn.com/fantasy/basketball/story/_/id/21011102/2017-18-fantasy-basketball-rankings-tiers-cheat-sheets</link><category>basketball</category><pubDate>Fri, 13 Oct 2017 17:01:22 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTBaHH5pbRsefF57zTwsp_7TRmuVnFIXjgrSdyu7Ex91QZSYNbGiApYblpo7uAykQd711hPx8ZjQw\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.espn.com/fantasy/basketball/story/_/id/21011102/2017-18-fantasy-basketball-rankings-tiers-cheat-sheets\" target=\"_blank\"&gt;2017-18 fantasy basketball rankings/tiers cheat sheets&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;ESPN&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Big decisions by recruits await Maryland men's basketball this weekend</title><link>http://www.baltimoresun.com/sports/terps/tracking-the-terps/bs-sp-maryland-basketball-recruiting-1013-story.html</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=dlO8_gjgvR43UzM</guid><category>basketball</category><pubDate>Fri, 13 Oct 2017 11:00:58 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcSQJME7Jr_Cjn7HUrJuiXzj9iotuav1qChcoZ834FzSkqFa5uiS0odB_-4KQdSrHQZyVcch7h8bVQ\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.baltimoresun.com/sports/terps/tracking-the-terps/bs-sp-maryland-basketball-recruiting-1013-story.html\" target=\"_blank\"&gt;Big decisions by recruits await Maryland men's basketball this weekend&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Baltimore Sun&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/dlO8_gjgvR43UzM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Louisville basketball | Takeaways from the first Red-White scrimmage</title><link>http://www.courier-journal.com/story/sports/college/louisville/2017/10/13/louisville-basketball-takeaways-first-red-white-scrimmage/763487001/</link><category>basketball</category><pubDate>Sat, 14 Oct 2017 00:50:27 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcRgaVmxiOb95erCIyi6nAgcKKPLQr9InnckDhVDPMJ1LOha_qKxS3p178IvXlag-HgPmx0UW31pug\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.courier-journal.com/story/sports/college/louisville/2017/10/13/louisville-basketball-takeaways-first-red-white-scrimmage/763487001/\" target=\"_blank\"&gt;Louisville basketball | Takeaways from the first Red-White scrimmage&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;The Courier-Journal&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Kentucky Basketball: Big Blue Madness is completely off the rails again, and fans love it</title><link>https://www.seccountry.com/kentucky/kentucky-basketball-big-blue-madness-john-calipari-drake</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=d693SyRC9mtqzcM8gjWlhcydBhHtM</guid><category>basketball</category><pubDate>Sat, 14 Oct 2017 01:21:59 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcT73HV5SP4StkNmoU3lEmtn-45_wqpwpnu5MSvWHEUEth9MB4_R__37s13uNmo8d4oKXqHWxlACFQ\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"https://www.seccountry.com/kentucky/kentucky-basketball-big-blue-madness-john-calipari-drake\" target=\"_blank\"&gt;Kentucky Basketball: Big Blue Madness is completely off the rails again, and fans love it&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;SECcountry.com&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;li&gt;&lt;a href=\"http://www.courier-journal.com/story/sports/college/kentucky/2017/10/13/big-blue-madness-2017-kentucky-basketball-recruiting/760962001/\" target=\"_blank\"&gt;Big Blue Madness 2017 | Takeaways from Kentucky basketball's showcase, from Drake to recruits&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;The Courier-Journal&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=\"http://www.kentucky.com/sports/college/kentucky-sports/uk-basketball-men/article178802176.html\" target=\"_blank\"&gt;'We want you!': UK basketball fans cheer on recruits before Big Blue Madness&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Lexington Herald Leader&lt;/font&gt;&lt;/li&gt;&lt;a href=\"https://news.google.com/story/d693SyRC9mtqzcM8gjWlhcydBhHtM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Riccardo Tisci can't shake his love of basketball</title><link>https://www.interviewmagazine.com/fashion/riccardo-tisci-cant-shake-love-basketball</link><category>basketball</category><pubDate>Fri, 13 Oct 2017 18:13:55 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcSRX1xHRM9eKh3cvdWAdZHMMMLO9BOvMm7KsL_Hcfe-YiQpCPLmXxzQHbo_fzMUGOPgeUB_OkAg\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"https://www.interviewmagazine.com/fashion/riccardo-tisci-cant-shake-love-basketball\" target=\"_blank\"&gt;Riccardo Tisci can't shake his love of basketball&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Interview&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Kentucky Basketball recruiting roundup</title><link>https://www.aseaofblue.com/2017/10/13/16469218/kentucky-basketball-recruiting-roundup-keldon-johnson</link><category>basketball</category><pubDate>Fri, 13 Oct 2017 17:42:14 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcTM4u4UXYoeyhb5m7nrQV_v5dI4uaKcFpZNgR6HCNH9JBElW-ZP4-EGE5mi_itgFJRZilpFfxt_5A\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"https://www.aseaofblue.com/2017/10/13/16469218/kentucky-basketball-recruiting-roundup-keldon-johnson\" target=\"_blank\"&gt;Kentucky Basketball recruiting roundup&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;A Sea of Blue&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Michigan State mailbag: Football at the midpoint, basketball nearing tip-off</title><link>http://www.freep.com/story/sports/college/michigan-state/spartans/2017/10/13/michigan-state-football-basketball-mailbag/760618001/</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=d3UiD5Xx-lay3fM</guid><category>basketball</category><pubDate>Fri, 13 Oct 2017 15:00:17 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQE4WVJbJWWGyfiKuuw2uY75vzgKxs2rbUAvNej79z5HfjAKMelzo93VACkUlReBVFI7QO04B0MUSE\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.freep.com/story/sports/college/michigan-state/spartans/2017/10/13/michigan-state-football-basketball-mailbag/760618001/\" target=\"_blank\"&gt;Michigan State mailbag: Football at the midpoint, basketball nearing tip-off&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Detroit Free Press&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/d3UiD5Xx-lay3fM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Duke comes calling with scholarship for former McQuaid basketball big man Stewart</title><link>http://www.democratandchronicle.com/story/sports/high-school/2017/10/13/duke-offers-ex-mcquaid-big-man-isaiah-stewart-scholarship-la-lumiere/761097001/</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=d8a9CYFWqFr7w2M</guid><category>basketball</category><pubDate>Fri, 13 Oct 2017 18:49:03 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcQhkQbWFJz4_kYomVaB-g1YmCnyrk3b8KuChxBm9VV_YtY-TqApbr-lwkUssKGRrvR0bgQVrFRmtg\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.democratandchronicle.com/story/sports/high-school/2017/10/13/duke-offers-ex-mcquaid-big-man-isaiah-stewart-scholarship-la-lumiere/761097001/\" target=\"_blank\"&gt;Duke comes calling with scholarship for former McQuaid basketball big man Stewart&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Rochester Democrat and Chronicle&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/d8a9CYFWqFr7w2M?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Mizzou's basketball roster has been remade. But what happened to all the transfers?</title><link>http://www.kansascity.com/sports/college/sec/university-of-missouri/article178693961.html</link><category>basketball</category><pubDate>Fri, 13 Oct 2017 17:19:00 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcQCj0QAIuBJYKgk04GyV4vDP1D1PiQ3_mJMLzeE4bWpLR6Ac12f4cfq1v165RdaQ2K5MOfXsq1rSA\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.kansascity.com/sports/college/sec/university-of-missouri/article178693961.html\" target=\"_blank\"&gt;Mizzou's basketball roster has been remade. But what happened to all the transfers?&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Kansas City Star&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>David Duke Jr. picks Providence over Virginia Tech, others</title><link>http://www.roanoke.com/hokies/sports/mensbasketball/david-duke-jr-picks-providence-over-virginia-tech-others/article_09931204-b063-11e7-8d94-cf950bfc832d.html</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=d8zU75LtxmxDosM</guid><category>basketball</category><pubDate>Fri, 13 Oct 2017 22:20:14 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.roanoke.com/hokies/sports/mensbasketball/david-duke-jr-picks-providence-over-virginia-tech-others/article_09931204-b063-11e7-8d94-cf950bfc832d.html\" target=\"_blank\"&gt;David Duke Jr. picks Providence over Virginia Tech, others&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Roanoke Times&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/d8zU75LtxmxDosM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>College basketball corruption scandal takes center stage at Pac-12 media day</title><link>http://www.latimes.com/sports/ucla/la-sp-pac-12-basketball-20171012-story.html</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=dl8ZixFS8lIE1PM</guid><category>basketball</category><pubDate>Fri, 13 Oct 2017 00:35:00 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcT-ZfOx-BcG23WFJRPGqezcVIT4vPn-VvirQmlYZHpzpYoOSHauY3TBaZTsecvEcGSiM3GEcL8y8w\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.latimes.com/sports/ucla/la-sp-pac-12-basketball-20171012-story.html\" target=\"_blank\"&gt;College basketball corruption scandal takes center stage at Pac-12 media day&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Los Angeles Times&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/dl8ZixFS8lIE1PM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>USC Basketball Recruiting: J'Raan Brooks de-commits from Trojans</title><link>https://reignoftroy.com/2017/10/13/usc-basketball-recruiting-jraan-brooks-de-commits-trojans/</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=dbPzaiC6o1UxNkM</guid><category>basketball</category><pubDate>Fri, 13 Oct 2017 22:08:00 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcQPw4NcA08UZecqopTN-1wfv0K-mP6AJ7EJc2KoaPNMn9nDkrd02GFUIroem9-kjOn2ZV4_0GOjNA\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"https://reignoftroy.com/2017/10/13/usc-basketball-recruiting-jraan-brooks-de-commits-trojans/\" target=\"_blank\"&gt;USC Basketball Recruiting: J'Raan Brooks de-commits from Trojans&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Reign of Troy&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/dbPzaiC6o1UxNkM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Kentucky Basketball: Why Jarred Vanderbilt still hasn't had surgery and why the Wildcats need him ASAP</title><link>https://www.seccountry.com/kentucky/kentucky-uk-basketball-jarred-vanderbilt-injury-update</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=dyfxky2sgvBN6BMsjK_51KaroHxzM</guid><category>basketball</category><pubDate>Fri, 13 Oct 2017 12:32:47 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcQYigv6xBAro0kPA4Uyr2oKoRMta10R7GUTl4sjT-rcvGVNMLzkDu6LOEGelwI7kcSqkSUca-7-kRQ\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"https://www.seccountry.com/kentucky/kentucky-uk-basketball-jarred-vanderbilt-injury-update\" target=\"_blank\"&gt;Kentucky Basketball: Why Jarred Vanderbilt still hasn't had surgery and why the Wildcats need him ASAP&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;SECcountry.com&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;li&gt;&lt;a href=\"https://www.aseaofblue.com/2017/10/13/16467912/kentucky-basketball-5-things-learned-media-day\" target=\"_blank\"&gt;Kentucky Basketball: 5 things we learned from Media Day&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;A Sea of Blue&lt;/font&gt;&lt;/li&gt;&lt;li&gt;&lt;a href=\"http://www.espn.com/mens-college-basketball/story/_/id/21002969/kentucky-wildcats-coach-john-calipari-unhappy-black-eye-college-basketball\" target=\"_blank\"&gt;John Calipari: 'None of us know where this thing's going'&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;ESPN&lt;/font&gt;&lt;/li&gt;&lt;a href=\"https://news.google.com/story/dyfxky2sgvBN6BMsjK_51KaroHxzM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Pitt basketball hits the 'Courtside at the Cathedral'</title><link>http://www.post-gazette.com/sports/Pitt/2017/10/13/Pitt-basketball-Courtside-at-the-Cathedral-Pittsburgh/stories/201710130191</link><guid isPermaLink=\"false\">tag:news.google.com,2005:cluster=dIt4J0_znakm9oM</guid><category>basketball</category><pubDate>Sat, 14 Oct 2017 03:50:15 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcSO01kH4GTTPfDvsQoaYfi3FEBZoXd3rvvngP5dssYZe108x3AaNw7h_nnBGLFQONs5rmwfTw8KuQ\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.post-gazette.com/sports/Pitt/2017/10/13/Pitt-basketball-Courtside-at-the-Cathedral-Pittsburgh/stories/201710130191\" target=\"_blank\"&gt;Pitt basketball hits the 'Courtside at the Cathedral'&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Pittsburgh Post-Gazette&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/dIt4J0_znakm9oM?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Minnesota seniors compete in 'granny basketball'</title><link>https://www.seattletimes.com/nation-world/minnesota-seniors-compete-in-granny-basketball/</link><category>basketball</category><pubDate>Sat, 14 Oct 2017 05:01:00 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcQrsKYTV3mK4W6hbuijxITkH-RIoJT07z7Dw5GJOkiatFLObTCS1nurM1V3GjC8XDReX5ZhSXw-HA\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"https://www.seattletimes.com/nation-world/minnesota-seniors-compete-in-granny-basketball/\" target=\"_blank\"&gt;Minnesota seniors compete in 'granny basketball'&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Seattle Times&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item><item><title>Syracuse basketball recruit Darius Bazley sees his versatility as Orange asset (video)</title><link>http://www.syracuse.com/orangebasketball/index.ssf/2017/10/syracuse_basketball_recruit_darius_bazley_sees_versatility_as_greatest_orange_as.html</link><category>basketball</category><pubDate>Fri, 13 Oct 2017 17:39:00 GMT</pubDate><description>&lt;table border=\"0\" cellpadding=\"2\" cellspacing=\"3\"&gt;&lt;tr&gt;&lt;td&gt;&lt;img src=\"https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcQmJ-YSANR6og5iqGRwx8pjKqJ5S2PBhbIBzdNG3MgljOwOYlWkGexJGQIwAE9xpPXQorc33q2eJg\" border=\"1\"&gt;&lt;/td&gt;&lt;td&gt;&lt;ol style=\"list-style: none; margin: 0; padding: 0;\"&gt;&lt;strong&gt;&lt;li&gt;&lt;a href=\"http://www.syracuse.com/orangebasketball/index.ssf/2017/10/syracuse_basketball_recruit_darius_bazley_sees_versatility_as_greatest_orange_as.html\" target=\"_blank\"&gt;Syracuse basketball recruit Darius Bazley sees his versatility as Orange asset (video)&lt;/a&gt;&amp;nbsp;&amp;nbsp;&lt;font color=\"#6f6f6f\"&gt;Syracuse.com&lt;/font&gt;&lt;/li&gt;&lt;/strong&gt;&lt;a href=\"https://news.google.com/story/?hl=en&amp;ned=us\" target=\"_blank\"&gt;Full coverage&lt;/a&gt;&lt;/ol&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description></item></channel></rss>";
+// todo remove this test variable
+
+
+function getRSSFeed(topic, callback){
+	var url = "https://news.google.com/news/rss/search/section/q/" + topic;
+	return callback(procRSSFeed(rssTest)); //TODO remove this
+	
+	get(url, function(data){
+		return callback(procRSSFeed(data));
+	});
+}
+
+function procRSSFeed(xml){
+	var div = document.createElement('div');
+	div.innerHTML = xml;
+	var titles = [];
+	for(let t of div.querySelectorAll('item > title'))
+		titles.push(t.innerText);
+	return titles;
+}
+
+function writeLiveTopics(topic, parentNode){
+	var n = {
+		type: 'liveSelector',
+		kids: [],
+		parent: parentNode,
+		nodeID: nodeID,
+		path: path, //menuPath,
+		el: menuDiv
+	};
+	writeItem("Live Feed", n, false, function(ev){
+		
+	}, afterNode)
+
+}
+
+
+function writeMenuAndOptions(path, parentNode){
+	if(path.length > 0)
+		return writeTextNodes(path, parentNode, true);
+		
+	var catLabel = getFirstArrKey(path);
+		
+	var menuDiv = writeItem(qData.strings[catLabel], path[catLabel], true, itemSel, parentNode);
+	var menuPath = path[catLabel];
+		
+	var menuNode = {
+		type: 'cat-unselected',
+		kids: [],
+		parent: parentNode,
+		nodeID: nodeID,
+		path: path, //menuPath,
+		el: menuDiv
+	};
+	
+	menuDiv.node = menuNode;
+	if(parentNode != null)
+		parentNode.kids.push(menuNode);
+
+	var nodeID, nodeDiv = menuDiv;
+	var n = menuNode;
+	for(var nodeID in menuPath){
+		var nodePath = menuPath[nodeID];
+		nodeDiv = writeItem(qData.strings[nodeID], nodePath, false, itemSel, n);
+		n = {
+			type: 'option',
+			kids: [],
+			parent: menuNode,
+			nodeID: nodeID,
+			path: nodePath,
+			el: nodeDiv
+		};
+		nodeDiv.node = n;
+		menuNode.kids.push(n);
+	}
+}
+
+function createLongPressHandler(el){
+	var timer = null;
+	
+	el.onmousedown = function(ev){
+		var moved = false;
+		el.onmouseup = el.onmousemove = function(ev){
+			if(!moved) // workaround for bug https://bugs.chromium.org/p/chromium/issues/detail?id=161464
+				return moved = true;
+			clearHandlers();
+			clearTimeout(timer);
+		}
+		timer = setTimeout(function(){
+			clearHandlers();
+			setVote();			
+		}, longPressTime);
+	};
+	
+	function clearHandlers(){
+		el.onmouseup = el.onmousemove = function(ev){};
+	}
+	
+
+	function setVote(){
+		el.classList.add('vote'); 
+		el.appendChild(document.createElement('div'));
+		el.appendChild(document.createElement('div'));
+	}
+
+}
+
+
+function itemSel(ev){
+	var node = ev.currentTarget.node;
+	switch(node.type){
+		case 'cat-unselected':
+			break;
+		
+		case 'option':
+			for(var i in node.parent.kids)
+				node.parent.kids[i].el.remove();
+			node.parent.kids = [node];
+		
+			node.el.remove();
+			node.el = null;
+			node.parent.el.innerHTML += ": " + qData.strings[node.nodeID];
+			node.parent.type = 'cat-selected';
+			writeMenuAndOptions(node.path, node.parent)
+			break;
+		case 'text':
+		// todo
+			break;
+			
+		case 'live-selected':
+			killKids(node.kids[0]);
+			node.el.innerText = node.el.innerText.split(':').splice(0,2).join(':');
+			node.type = 'cat-selected'; 
+			writeMenuAndOptions(node.kids[0].path, node);
+			break;
+		case 'cat-selected':
+			killKids(node);
+			killNode(node);
+			writeMenuAndOptions(node.path, node.parent);
+			break;
+	}
+}
+
+function killKids(node){
+	if(node.kids != null)
+		for(var n of node.kids){
+			killKids(n);
+			killNode(n);
+		}
+	node.kids = null;
+}
+
+function killNode(node){
+	if(('el' in node) && (node.el != null))
+		node.el.remove();
+}
+
+
+function writeItem(text, node, left, _onclick, afterNode){
+	var div = document.createElement('div');
+	div.classList.add('msg');
+	div.classList.add(left ? 'msg_left' : 'msg_right');
+	div.innerHTML = "<span>" + text + "</span>";
+	div.onclick = _onclick;
+	div.node = node;
+	if((afterNode == null) || (afterNode.el == null))
+		textpane.appendChild(div); 
+	else
+		afterNode.el.insertAdjacentElement('afterend', div);
+
+	return div;
+}
+
+function menu_select(ev){
+	console.log("clicked");
+	var mb = document.getElementById('menu_btn');
+	if(mb.classList.contains('active_menu'))
+		kill();
+	else {
+		mb.classList.add('active_menu');
+		document.body.addEventListener('mousedown', outsideMD);
+		mb.addEventListener('mousedown', stpMD);
+	}
+	
+	function stpMD(ev){
+		ev.stopPropagation();	
+	}
+	
+	function outsideMD(ev){
+		kill();
+	}
+
+	function kill(){
+		mb.classList.remove('active_menu');
+		document.body.removeEventListener('mousedown', outsideMD);
+		mb.removeEventListener('mousedown', stpMD);
+	}
+}
+
+window.onload  = function(){ //test code
+	hideEl = document.getElementById('hide');
+	textpane = document.getElementById('textpane'); // must retain this 
+	writeMenuAndOptions(qData.userQuestions, null);
+	document.getElementById('new_account')['data-onload'] = initBirthday;
+	
+	for(let b of document.getElementsByClassName('submit'))
+		b.onclick = submitData;
+	initListeners();
+}
+
+
+function dispatchRequests(rqs){
+	var rqsM = {};
+	var d;
+	for(let rq of rqs){
+		if('data' in rq){
+			d = {type: rq.type, data: rq.data, id: rqId};
+			rq.data = null; //reclaim space
+		}
+		else
+			d = {type: rq.type, id: rqId};
+		rqsM[rqId] = d;
+		pendingAJAXCallbacks[rqId] = rq.callback;
+		rqId++;
+	}
+	
+	function callbackAll(data){
+		for(rqid in data){ // todo: add error handling code
+			if(!(rqid in pendingAJAXCallbacks)){
+				sLog("Error: No callback found for rqId:" + rqid);
+				continue;
+			}
+			if(('deferred' in data) && deferred.data) // data to be returned in future request
+				continue;
+			pendingAJAXCallbacks[rqid](data[rqid]);
+			delete pendingAJAXCallbacks[rqid]; // mark as having been run
+		}
+		for(rqid in pendingAJAXCallbacks){
+			sLog("Error: No server response/deferral for rqId: " + rqid + ", deleting.");
+			delete pendingAJAXCallbacks[rqid];
+		}
+	}
+	post(rqEndpoint, rqSM, { success: callbackAll });
+}
+
+function sLog(msg){
+	console.log("Error: " + msg);
+}
+
+function get(url, callbacks){
+	var xhr = new XMLHttpRequest();
+	xhr.open("GET", url, true);
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4 && xhr.status === 200) {
+			callbacks.success(xhr.responseText);
+		}
+	};
+	xhr.timeout = ajaxTimeout;
+	var tries = 0;
+	xhr.ontimeout = function(){
+		if( tries++ < maxAjaxTries ){
+			sLog("Request timed out, retrying(" + tries + ")");
+			xhr.send( json );
+		}
+		else {
+			sLog("Exceeded max ajax retries (" + tries + "), aborting request");
+			if('fail' in callbacks)
+				callbacks.fail();
+		}
+	}
+	xhr.send();
+}
+
+
+
+function post(url, data, callbacks){
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-type", "application/json");
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4 && xhr.status === 200) {
+			try {
+				var data = JSON.parse(xhr.responseText); // TODO put in some error checking here
+			}
+			catch(e){
+				sLog("Error parsing JSON response. Raw: " + xhr.responseText);
+			}
+			callbacks.success(data);
+		}
+	};
+	xhr.timeout = ajaxTimeout;
+	var tries = 0;
+	xhr.ontimeout = function(){
+		if( tries++ < maxAjaxTries ){
+			sLog("Request timed out, retrying(" + tries + ")");
+			xhr.send( json );
+		}
+		else {
+			sLog("Exceeded max ajax retries (" + tries + "), aborting request");
+			if('fail' in callbacks)
+				callbacks.fail();
+		}
+	}
+	try {
+		var json = JSON.stringify(data);
+	}
+	catch(e){
+		sLog("Error encoding string: " + data + " Error message: " + e.message);
+		return null;
+	}
+
+	xhr.send( json );
+}
+
+function lenMonth(m, y) {
+    var d = new Date(y, m, 31).getDate();
+	return d == 31 ? 31 : 31 - d;
+}
+
+function setDaysForMonth(b){
+	var nDays = lenMonth(b.elements['month'].value, b.elements['year'].value);
+	var days = b.elements['day'].children;
+	var cVal = b.elements['day'].value;
+	if(nDays > days.length)
+		for(var i = days.length; i  < nDays; i++)
+			b.elements['day'].appendChild(hideEl.children[30 - i]);
+	else {
+		for(var i = days.length - 1; i >= nDays; i--)
+			hideEl.appendChild(days[i]);
+		if(cVal > days.length){
+			b.elements['day'].value = 0;
+			return b.elements['day'].classList.add('invalid_input');
+		}
+	}
+	b.elements['day'].value = cVal;
+	b.elements['day'].classList.remove('invalid_input');
+}
+
+
+function initBirthday(){
+	var y = new Date(Date.now()).getFullYear();
+	var maxYear = y - 12, minYear = y - 100;
+	var b = document.forms['new_account'];
+	
+	for(var i = maxYear; i >= minYear; i--){ // year
+		var o = document.createElement('option');
+		o.value = i;
+		o.innerHTML = i;
+		b.elements['year'].append(o);
+	}
+	
+	for(var i = 1; i <= 31; i++){ // day of month
+		var o = document.createElement('option');
+		o.value = i;
+		o.innerHTML = i;
+		b.elements['day'].append(o);
+	}
+	
+	var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+	for(var locale = getLocale(), d = new Date(), i = 0; i < 12; i++){
+		var o = document.createElement('option');
+		o.value = i;
+		d.setMonth(i);
+		o.innerHTML = d.toLocaleString(locale, { month: "short" }); // internationalise
+		b.elements['month'].append(o);
+	}
+	
+	b.onchange = function(ev){
+		setDaysForMonth(b);
+	};
+	
+	setDaysForMonth(b);
+}
+
+function getLocale(){
+	return 'languages' in navigator ? navigator.languages[0] : navigator.language;
+}
+
+function getFormData(btn){
+	var data = {}, valid = true, invalidNames = {};
+	
+	while(btn.tagName != 'FORM')
+		btn = btn.parentNode;
+	for(var f of document.forms[btn.name].elements){
+		if(!('name' in f))
+			continue;
+		if('checkValidity' in f){
+			if(f.checkValidity()){
+				f.classList.remove('invalid_input');				
+			}
+			else {
+				valid = false;
+				f.classList.add('invalid_input');
+				invalidNames[f.name] = true;
+				continue;
+			}
+		}
+		
+		data[f.name] = f.value;
+	}
+	
+	for(var n in invalidNames)
+		for(var el of document.getElementsByName(n))
+			el.classList.add('invalid_input');
+	
+	var fData = {};
+	fData[btn.name] = fData;
+	return valid ? fData : null;
+}
+
+function setDefEmail(){
+	if('email' in window.localStorage)
+		for(let el of document.querySelectorAll("input[type='email']"))
+			input.value = window.localStorage.email;
+}
+
+function resetForm(f){
+	for(let el of f.getElementsByTagName('INPUT'))
+		switch(el.type){
+			case 'email':
+				if('email' in window.localStorage)
+					el.value = window.localStorage.email;
+				break;
+			case 'text':
+			case 'password':
+				el.value = '';
+				break;
+		}
+	f.className.remove('error');
+}
+
+function submitData(){
+	var f = this, d = getFormData(f);
+	
+	if(d==null){
+		this.classList.add('error');
+		setTimeout(function(){
+			resetForm(f);
+		}, errNoticeTimeout);
+		return;
+	}
+	dispatchRequests([{
+		type: f.getAttribute('data-type'),
+		data:	d,
+		id: rqId++
+	}]);
+}
+
+function chkInputField(ev){
+	if(!('checkValidity' in ev.target))
+		return;
+
+	var els = document.getElementsByName(ev.target.name);
+	if(ev.target.checkValidity())
+		for(var el of els)
+			el.classList.remove('invalid_input');
+	else
+		for(var el of els)
+			el.classList.add('invalid_input');
+}
+
+function initListeners(){
+	for(let f of document.forms){
+		f.addEventListener('change', chkInputField);
+		f.addEventListener('paste', chkInputField);
+		f.addEventListener('keypress', chkInputField);
+		f.addEventListener('focusout', chkInputField);
+	}
+	
+	for(let f of document.getElementsByClassName('button_link'))
+		f.addEventListener('click', ldPage);
+	
+	document.getElementById('logout').addEventListener('click', function(ev){
+		clearUserData();
+		document.body.removeAttribute('data-logged-in');
+	});
+
+	document.getElementById('menu_btn').addEventListener('click', menu_select);
+}
+
+function ldPage(ev){
+	console.log('ldPage()');
+	var pgId = ev.target.getAttribute('data-link');
+	document.body.className = pgId;
+	var el = document.getElementById(pgId);
+	if('data-onload' in el){
+		el['data-onload'].call(el);
+		el.removeAttribute('data-onload');
+	}
+	for(let e of document.querySelectorAll("input[type='email'].invalid_input, input[type='text'].invalid_input, fieldset.radio_container.invalid_input"))
+		if(!('value' in e) || (e.value.length==0))
+			e.classList.remove('invalid_input');
+}
+
+function clearUserData(){
+    for(let c of document.cookie.split(";"))
+		document.cookie = c.split('=')[0] + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+	if('user' in localStorage)
+		delete localStorage.user;
+}
+
+</script>
+
+</head>
+<body data-logged-in>
+<header><div class='button_link' data-link="login_page" id='nav'>&#x2b05;</div><div id='menu_btn'>&#x22ee;
+<div id='menu'>
+<div class='button_link' data-link="login_page" id='logout'>Logout</div>
+<div class='button_link' data-link='settings_page' id='settings'>Settings</div>
+</div>
+
+</div>
+</header>
+
+<div id='textwrapper' class="screen">
+<div id='textpane'>
+</div>
+<!--
+<footer><div class='footer_right'><span>&#x1f399;<span></div><div class='footer_left'><div>Type your text here</div></div></footer>
+-->
+<div class='clear_float'></div>
+<footer>
+Type a message...<br>
+<div>&#x1f3a8; &#x1f4f7; &#x1f3a5; &#x1f50d; </div>
+</footer>
+</div>
+
+
+<div class='screen config_screen' id='login_page'>
+<form data-formtype="login" name='login_page'>
+<input name='login_name' type='email' required placeholder="example@me.com"></input><br/>
+<input name='password' type='password' required placeholder="Password"></input><br/><br/>
+<div class='centered_buttons'>
+<div class='button submit default_button'>Login</div>
+<div class='button button_link' data-link="new_account">Create Account</div>
+<div class='button button_link' data-link="reset_password">Forgot Password</div>
+</div>
+</form>
+</div>
+
+
+<div class='config_screen screen' id='new_account'>
+<form data-formtype="new_account" name='new_account'>
+<input required placeholder='First Name' name='first_name' type='text'></input><br>
+<input required placeholder='Surname' name='surname' type='text'></input><br/>
+<input required placeholder='example@me.com' name='email' type='email'></input><br/>
+
+<fieldset required class='radio_container' name='gender'>
+<input required type="radio" name="gender" id='male' value="male">
+<label for="male">Male</label>
+<input required type="radio" name="gender" id='female' value="female">
+<label for="female">Female</label>
+<input required type="radio" name="gender" id='other' value="other">
+<label for="other">Other</label>
+</fieldset>
+
+<p>Birthday</p>
+<span id='hide'></span>
+<div id='birthday'>
+<select name='day'>
+</select>
+<select name='month'>
+</select>
+<select name='year'>
+</select>
+</div>
+<div class='submit submit_btn button default_button'>Submit</div>
+</form>
+
+</div>
+
+<div class='config_screen screen' id='reset_password'>
+<form data-formtype="reset_password" name='reset_password'>
+Please enter your email address<br/>
+<input name='login_name' type='email' required placeholder="example@me.com"></input>
+<div class='submit submit_btn button default_button'>Submit</div>
+</form>
+</div>
+
+<div class='config_screen screen' id='settings_page'>
+<form name='settings_page'>
+Settings here<br/>
+
+<div class='submit submit_btn button default_button'>Submit</div>
+</form>
+</div>
+
+</body>
+</html>
