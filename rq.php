@@ -50,6 +50,49 @@ function create_response($rqid, $data = array()){
 	$response[$rqid] = $data;
 }
 
+function chk_fields_present($field_names, $arr){
+	$keys = array_keys($arr);
+	$res = array();
+	$missing = array_diff($field_names, $keys);
+	if(count($missing) > 0)
+		$res['missing'] = $missing;
+	$excess = array_diff($keys, $field_names);
+	if(count($excess) > 0)
+		$res['excess'] = $excess;
+	return count($res) > 0 ? $res : TRUE;
+}
+
+function create_new_account($data, &$fields_resp){
+	$valid = TRUE;
+	$res = chk_fields_present(array('email', 'gender', 'day', 'month', 'year'), $data);
+	if($res !== TRUE){
+		$valid = FALSE;
+		$fields_resp = $res;
+	}
+	if(!array_key_exists('invalid', $res))
+		$res['invalid'] = array();
+	
+	if(!filter_var($data['email'], FILTER_VALIDATE_EMAIL)){
+		$valid = FALSE;
+		array_push($res['invalid'], 'email');		
+	}
+	if(!in_array($res['gender'], array('male', 'female', 'other'))){
+		$valid = FALSE;
+		array_push($res['invalid'], 'gender');		
+	}
+	if($valid)
+		unset($res['invalid']);
+	else
+		return FALSE;
+	
+	$email_hash = 
+	$sql = "INSERT INTO users ()"
+	mail( $email,  $subject , string $message
+}
+
+
+
+
 if(!isset($_SERVER['Authorization']) || !verify_token($_SERVER['Authorization'])){
 	$rqs = find_rqs_by_type($rq_list, 'login');
 	$l = count($rqs);
@@ -57,8 +100,8 @@ if(!isset($_SERVER['Authorization']) || !verify_token($_SERVER['Authorization'])
 		$rqs = find_rqs_by_type($rq_list, 'new_account');
 		if(count($rqs)==1){
 			create_response($rqs[0]->rqid, array(
-				'result' => create_new_account($rqs[0], $fields_msgs),
-				'fields' => $fields_msgs,				
+				'result' => create_new_account($rqs[0], $fields_resp),
+				'fields' => $fields_resp,				
 			));
 		}
 		else

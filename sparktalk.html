@@ -531,22 +531,25 @@ function getForm(btn){
 function getFormData(frm){
 	var data = {}, valid = true, invalidNames = {};
 
-	for(var f of document.forms[frm.name].elements){
-		if(!('name' in f))
+	inpor(let inp of document.inporms[frm.name].elements){
+		if(!('name' in inp))
 			continue;
-		if('checkValidity' in f){
-			if(f.checkValidity()){
-				f.classList.remove('invalid_input');				
+		if('checkValidity' in inp){
+			if(inp.checkValidity()){
+				inp.classList.remove('invalid_input');				
 			}
 			else {
 				valid = false;
-				f.classList.add('invalid_input');
-				invalidNames[f.name] = true;
+				inp.classList.add('invalid_input');
+				invalidNames[inp.name] = true;
 				continue;
 			}
 		}
 		
-		data[f.name] = f.value;
+		data[inp.name] = inp.value;
+		var onsb = inp.getAttribute('data-onsubmit');
+		if(onsb)
+			data[inp.name] = eval(onsb + '(' + data[inp.name] + ')');
 	}
 	
 	for(var n in invalidNames)
@@ -556,6 +559,41 @@ function getFormData(frm){
 	var fData = {};
 	fData[frm.name] = data;
 	return valid ? fData : null;
+}
+
+function encB64(n){
+	if(n <= 25)
+		return n + 65;
+	if(n <= 51)
+		return n + 71;
+	if(n <= 61)
+		return n - 4;
+	if(n==62)
+		return 19;
+	if(n==63)
+		return 16;
+}
+
+function encode3Bytes(bin, i, bout){
+	
+}
+
+function toB64(ba){
+	if(ba.length != 43){
+		sLog("Error: Wrong length");
+		return null;
+	}
+	for(var i = 0; i < 42; i++)
+		
+		
+}
+
+function hash(val){
+	var buffer = new TextEncoder("utf-8").encode(val);
+	return crypto.subtle.digest("SHA-256", buffer).then(function (hash) {
+	return hex(hash);
+});
+
 }
 
 function setDefEmail(){
@@ -678,8 +716,8 @@ Type a message...<br>
 
 <div class='screen config_screen' id='login_page'>
 <form data-formtype="login" name='login_page'>
-<input name='login_name' type='email' required placeholder="example@me.com"></input><br/>
-<input name='password' type='password' required placeholder="Password"></input><br/><br/>
+<input data-onsubmit='hash' name='login_name' type='email' required placeholder="example@me.com"></input><br/>
+<input data-onsubmit='hash' name='password' type='password' required placeholder="Password"></input><br/><br/>
 <div class='centered_buttons'>
 <div class='button submit default_button'>Login</div>
 <div class='button button_link' data-link="new_account">Create Account</div>
@@ -691,8 +729,8 @@ Type a message...<br>
 
 <div class='config_screen screen' id='new_account'>
 <form data-formtype="new_account" name='new_account'>
-<input required placeholder='First Name' name='first_name' type='text'></input><br>
-<input required placeholder='Surname' name='surname' type='text'></input><br/>
+<!-- <input required placeholder='First Name' name='first_name' type='text'></input><br>
+<input required placeholder='Surname' name='surname' type='text'></input><br/> -->
 <input required placeholder='example@me.com' name='email' type='email'></input><br/>
 
 <fieldset required class='radio_container' name='gender'>
@@ -722,7 +760,7 @@ Type a message...<br>
 <div class='config_screen screen' id='reset_password'>
 <form data-formtype="reset_password" name='reset_password'>
 Please enter your email address<br/>
-<input name='login_name' type='email' required placeholder="example@me.com"></input>
+<input name='email' type='email' required placeholder="example@me.com"></input>
 <div class='submit submit_btn button default_button'>Submit</div>
 </form>
 </div>
