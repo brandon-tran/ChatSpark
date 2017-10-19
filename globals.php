@@ -11,7 +11,8 @@ $dropbox_secret = "evrzwbig18c0r3t";
 $dropbox_token = "3Y9RfWQXvtAAAAAAAAAACNjjHLjVjP4jpaBZ67mV2RwXRuArIBtWT_xDE07fzSr8";
 define('STEP_TIME_BEFORE_PASSWORD_UPDATE_CHECK', 3600);
 define('ER_DUP_ENTRY_WITH_KEY_NAME', 1586); // from mysqld_error.h
-
+define('FILE_DIR', ''); // TODO change this
+define('ACTIVATION_EMAIL_FILE', FILE_DIR . '/activation_email.html');
 
 $commonSalt = [52, 114, 250, 27, 157, 4, 78, 96, 51, 65, 236, 143, 107, 225, 131, 247, 20, 136, 102, 37, 253, 125];
 

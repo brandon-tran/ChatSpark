@@ -120,12 +120,34 @@ function create_new_account($rq, &$resp){
 				$resp['status'] = 'error';
 				return FALSE;
 		}
-	
-	send_confirmation_email($rq->data['email']);	
+	return send_confirmation_email($rq->data['email'], $mysql_conn->insert_id);
 }
 
-function send_confirmation_email($email){
-	mail( $rq->data['email'],  $subject , string $message	
+
+function send_outgoing_emails(){
+	static $subject = "Account activation for your new chatSpark account";
+	$message = file_get_contents(ACTIVATION_EMAIL_FILE);
+	
+	mail( $rq->data['email'],   , string $message	
+	
+	
+}
+
+function send_confirmation_email($email, $user_id){
+	$ip = $_SERVER['REMOTE_ADDR'];
+	$sql = "SELECT COUNT FROM email WHERE user_id="
+	$sql = "INSERT INTO email (email, user_id, ip) VALUES($email, $user_id, " .  . " )";
+	
+	$tkn = array(
+		'user_id' => $fields['email_hash'],
+		
+		
+	);
+	$message = str_replace('@activation_link@', )
+	
+	
+	Thank you for signing up to chatSpark!\To activate your account please click on the link below.
+	
 	
 }
 
