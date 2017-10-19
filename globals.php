@@ -6,6 +6,7 @@ define('MYSQL_SERVER', 'localhost');
 define('MYSQL_USERNAME', 'chatspark_user');
 define('MYSQL_PASSWORD', 'NMdWMg43ysLfRvYk');
 define('MYSQL_DB', 'chatspark');
+define('ACTIVATION_EMAIL_ADDRESS', 'activation@chatspark.xyz');
 $mysql_conn = NULL;
 
 $log_file = "F:\\Hosting\\Logs\\sparktalk.log";

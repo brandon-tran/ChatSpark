@@ -173,7 +173,10 @@ function send_confirmation_email($email, $user_id, &$resp){
 	
 	$message = str_replace('@activation_link@', ACTIVATION_ENDPOINT . '?' . encode_token($tkn), $message);
 	dLog("send_confirmation_email() message:\n $message");
-	if(mail( $email, "Account activation for your new chatSpark account", $message )){
+	
+	$email_headers = [ 'MIME-Version: 1.0', 'Content-type: text/html; charset=iso-8859-1', 'From: ChatSpark <' . ACTIVATION_EMAIL_ADDRESS . '>' ];
+	
+	if(mail( $email, "Account activation for your new chatSpark account", $message, implode("\r\n", $email_headers))){
 		$resp['status'] = 'confirmation_email_sent';
 		return TRUE;
 	}	
