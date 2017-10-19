@@ -294,6 +294,7 @@ function killKids(node){
 		}
 	node.kids = null;
 }
+    
 
 function killNode(node){
 	if(('el' in node) && (node.el != null))
@@ -305,7 +306,7 @@ function writeItem(text, node, left, _onclick, afterNode){
 	var div = document.createElement('div');
 	div.classList.add('msg');
 	div.classList.add('animated');
-	div.classList.add('bounceInUp');
+	div.classList.add('bounceInLeft');
 
 	div.classList.add(left ? 'msg_left' : 'msg_right');
 	div.innerHTML = "<span>" + text + "</span>";
