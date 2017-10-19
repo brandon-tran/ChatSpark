@@ -11,8 +11,9 @@ body {
 	/* line-height: 26px; */
 	line-height: 1em;
     margin: 0 auto;
-	background-image:url(msg_bg.jpg);
-	background-repeat:repeat;
+	/*background-image:url(msg_bg.jpg);
+	background-repeat:repeat;*/
+    background-color:#e0e0e0;
 	color: black;
 	font-size: 5vw;
 
@@ -84,13 +85,13 @@ label {
 }
 
 .msg_left {
-	background-color: #E1FFC7;
+	background-color: #b6dce8;
 	border-top-left-radius: 0!important;
 	float: left;
 }
 
 .msg_right::after {
-	color: #FFEAB1;
+	color: #ffe49e;
 	content: "\25E4";
 	position: absolute;
 	top: 0;
@@ -101,13 +102,13 @@ label {
 
 
 .msg_right {
-	background-color: #FFEAB1; 
+	background-color: #ffe49e; 
 	border-top-right-radius: 0!important;
 	float: right;
 }
 
 .msg_left::before {
-	color: #E1FFC7;
+	color: #b6dce8;
 	content: "\25E5";
 	position: absolute;
 	top: 0;
@@ -166,11 +167,15 @@ label {
 }
 
 .default_button {
-	background-color: #42d9f4;
+	background-color: #FEB700;
+}
+
+.default_button:hover {
+	background-color: #ffd25c;
 }
 
 .button:active {
-	background-color: blue!important;
+	background-color: #ffd25c;
 }
 
 .config_screen input:not([type='radio']){
@@ -224,13 +229,13 @@ header {
 }
 
 header, #menu > div:hover {
-	background-color: green;
+	background-color: #005a76;
 	color: white;
 }
 
 #menu_btn {
 	float: right;
-	margin: 0.25em 1em 0 0;
+	margin: 0.4em 1em 0 0;
 }
 
 header > div {
@@ -299,7 +304,7 @@ body:not([data-logged-in]) #logout {
 
 #menu {
 	position: absolute;
-	top: 0;
+	top: 3em;
 	right: 0;
 	background-color: white;
 	width: auto;
