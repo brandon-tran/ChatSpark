@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Oct 19, 2017 at 05:57 AM
+-- Generation Time: Oct 19, 2017 at 06:32 AM
 -- Server version: 5.7.19
 -- PHP Version: 7.0.23
 
@@ -19,7 +19,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `sparktalk`
+-- Database: `chatspark`
 --
 
 DELIMITER $$
@@ -110,7 +110,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `email_hash`, `email_hash_hash`, `gender`, `birthday`, `created`, `password_hash`, `verified`) VALUES
-(1, 'GdfilU+DEU2qIfmT9o/YLXBDz6OfuE80vUS/z0WBfGg=', 1952491474, 0, 1167638400, '2017-10-19 12:42:54', 'lF1FHJDYQKf95i5Bx53Kl1mgZVAJqji9oFAdNLJHzdk=', NULL);
+(1, 'GdfilU+DEU2qIfmT9o/YLXBDz6OfuE80vUS/z0WBfGg=', 1952491474, 0, 1167638400, '2017-10-19 13:30:36', 'lF1FHJDYQKf95i5Bx53Kl1mgZVAJqji9oFAdNLJHzdk=', NULL);
 
 --
 -- Indexes for dumped tables
@@ -171,7 +171,7 @@ ALTER TABLE `strings`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `user_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
