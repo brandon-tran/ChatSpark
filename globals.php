@@ -1,18 +1,35 @@
 <?php
+$debug = TRUE;
+
 
 $mysql_servername = "localhost";
 $mysql_username = "sparktalk_user";
 $mysql_password = "NMdWMg43ysLfRvYk";
 $mysql_db = "sparktalk";
 $mysql_conn = NULL;
+
+
 $log_file = "F:\\Hosting\\Logs\\sparktalk.log";
+
+if($debug)
+	file_put_contents($log_file, "");
+
+
 $dropbox_key = "ptx5vdfpqpu6ep8";
 $dropbox_secret = "evrzwbig18c0r3t";
 $dropbox_token = "3Y9RfWQXvtAAAAAAAAAACNjjHLjVjP4jpaBZ67mV2RwXRuArIBtWT_xDE07fzSr8";
+$genders = array('male', 'female', 'other');
+
+define('SERVER_ADDRESS', '127.0.0.1/sparktalk');
+define('ACTIVATION_ENDPOINT', SERVER_ADDRESS . '/activate.php');
+
 define('STEP_TIME_BEFORE_PASSWORD_UPDATE_CHECK', 3600);
-define('ER_DUP_ENTRY_WITH_KEY_NAME', 1586); // from mysqld_error.h
+define('ER_DUP_ENTRY', 1062); // from mysqld_error.h
 define('FILE_DIR', ''); // TODO change this
 define('ACTIVATION_EMAIL_FILE', FILE_DIR . '/activation_email.html');
+define('MAX_EMAILS_PER_HOUR', 5);
+define('MIN_AGE', 10);
+define('MAX_AGE', 100);
 
 $commonSalt = [52, 114, 250, 27, 157, 4, 78, 96, 51, 65, 236, 143, 107, 225, 131, 247, 20, 136, 102, 37, 253, 125];
 

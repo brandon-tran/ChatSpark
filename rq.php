@@ -1,20 +1,12 @@
 <?php
-// include('JWT.php');
 include('globals.php');
 include('utils.php');
-use \jwt
-include('JWT.php');
-include('BeforeValidException.php');
-include('ExpiredException.php');
-include('SignatureInvalidException.php');
-
-
-// TODO verify token here
+include('jwt/JWT.php');
 
 
 $rq_list = json_decode(file_get_contents("php://input"), false);
 
-$response = array();
+$responses = array();
 $headers = array();
 $verified = false;
 $token = array();
@@ -47,21 +39,23 @@ function invalid_status_response($resp, $rq){
 	return true;	
 }
 
-function write_response(){
-	global $response, $headers;
+function write_responses(){
+	global $responses, $headers;
 	foreach($headers as $k => $field)
 		header("$k:$field");
-	echo json_encode($response);
+	echo json_encode(array_values($responses));
 }
 
-function create_response($rqid, $data = array()){
-	global $response;
-	if(array_key_exists($rqid, $response))
+function create_response($resp){
+	global $responses;
+	if(array_key_exists($resp['rqid'], $responses))
 		die(dLog("Error: response already written for rqid=$rqid"));
-	$response[$rqid] = $data;
+	$responses[$resp['rqid']] = $resp;
 }
 
-function chk_fields_present($field_names, $arr){
+function chk_fields_present($field_names, $arr, &$res){
+	if(gettype($arr)=='object')
+		$arr = get_object_vars($arr);
 	$keys = array_keys($arr);
 	$res = array();
 	$missing = array_diff($field_names, $keys);
@@ -70,47 +64,72 @@ function chk_fields_present($field_names, $arr){
 	$excess = array_diff($keys, $field_names);
 	if(count($excess) > 0)
 		$res['excess'] = $excess;
-	return count($res) > 0 ? $res : TRUE;
 }
 
+function chk_date($d, $m, $y, &$inv){
+	$age = date('Y') - $y;
+	
+	if(($age < MIN_AGE) || ($age > MAX_AGE))
+		array_push($inv, 'year');
+	
+	if(($m < 1) || ($m > 12))
+		array_push($inv, 'month');
+	
+	if(!checkdate($m, $d, $y))
+		array_push($inv, 'day');
+
+}
+
+
 function create_new_account($rq, &$resp){
-	global $mysql_conn;
+	global $mysql_conn, $genders;
 	$valid = TRUE;
 	$resp['fields'] = array();
-	static $req_fields = array('email', 'email-hash', 'gender', 'day', 'month', 'year');
-	$res = chk_fields_present($req_fields, $rq->data);
-	if($res !== TRUE){
-		$valid = FALSE;
-		$resp['fields'] = $res;
-	}
-	
-	if(!array_key_exists('invalid', $res))
+	static $req_fields = array('email', 'email_hash', 'password_hash', 'gender', 'day', 'month', 'year');
+	chk_fields_present($req_fields, $rq->data, $resp['fields']);
+
+	if(!array_key_exists('invalid', $resp['fields']))
 		$resp['fields']['invalid'] = array();
 	
-	if(!filter_var($rq->data['email'], FILTER_VALIDATE_EMAIL)){
-		$valid = FALSE;
-		array_push($resp['fields']['invalid'], 'email');		
-	}
-	if(!in_array($res['gender'], array('male', 'female', 'other'))){
-		$valid = FALSE;
-		array_push($resp['fields']['invalid'], 'gender');		
-	}
-	if($valid)
-		unset($resp['fields']['invalid']);
-	else {
+	if(!filter_var($rq->data->email, FILTER_VALIDATE_EMAIL))
+		array_push($resp['fields']['invalid'], 'email');	
+	
+	$g = array_search($rq->data->gender, $genders);
+	if($g===FALSE)
+		array_push($resp['fields']['invalid'], 'gender');
+	else
+		$rq->data->gender = $g;
+	
+	chk_date($rq->data->day, $rq->data->month + 1, $rq->data->year, $resp['fields']['invalid']);
+	
+	foreach($resp['fields'] as $k => $v)
+		if(count($v) > 0)
+			$valid = FALSE;
+		else
+			unset($resp['fields'][$k]);
+
+	if(!$valid){
 		$resp['status'] = 'field_error';
 		return FALSE;
 	}
+
+	$wr_fields = get_object_vars($rq->data);
 	
-	$wr_fields = $rq->data;
-	unset $wr_fields['email'];
-	$wr_fields['email_hash_hash'] = hash('CRC32', $rq_fields['email_hash']);
+	foreach(array('email', 'year', 'month', 'day') as $k)
+		unset($wr_fields[$k]);
+		
+	$wr_fields['email_hash_hash'] = CRC32($rq->data->email_hash);
 	
-	$sql = "INSERT INTO users (" . implode(',', array_keys($wr_fields)) . ") VALUES("  . implode(',', array_values($wr_fields)) . ");";
-	
-	if(!do_sql($sql))
-		switch(mysqli_errno($mysql_conn)){
-			case ER_DUP_ENTRY_WITH_KEY_NAME:
+	$wr_fields['birthday'] = mktime(0,0,0, $rq->data->month + 1, $rq->data->day, $rq->data->year);
+	dLog("wr_fields:", $wr_fields);
+	dLog("wr_fields av:", array_values($wr_fields));
+	$sql = "INSERT INTO users(" . implode(',', array_keys($wr_fields)) . ") VALUES(" . implode_sql(array_values($wr_fields)) . ");";
+
+	if(!do_sql($sql)){
+		$err_num = mysqli_errno($mysql_conn);
+		dLog("MySQL error in create_new_account(). Number: $err_num");
+		switch($err_num){
+			case ER_DUP_ENTRY:
 				dLog("User account already created");
 				$resp['status'] = 'existing_user';
 				return FALSE;
@@ -120,35 +139,42 @@ function create_new_account($rq, &$resp){
 				$resp['status'] = 'error';
 				return FALSE;
 		}
-	return send_confirmation_email($rq->data['email'], $mysql_conn->insert_id);
+	}
+	return send_confirmation_email($rq->data->email, $mysql_conn->insert_id, $resp);
 }
 
 
-function send_outgoing_emails(){
-	static $subject = "Account activation for your new chatSpark account";
-	$message = file_get_contents(ACTIVATION_EMAIL_FILE);
-	
-	mail( $rq->data['email'],   , string $message	
-	
-	
-}
-
-function send_confirmation_email($email, $user_id){
+function send_confirmation_email($email, $user_id, &$resp){	
+	dLog("send_confirmation_email() cwd:" . getcwd());
 	$ip = $_SERVER['REMOTE_ADDR'];
-	$sql = "SELECT COUNT FROM email WHERE user_id="
-	$sql = "INSERT INTO email (email, user_id, ip) VALUES($email, $user_id, " .  . " )";
+	$t = time() - 3600;
+	$sql = "SELECT COUNT(*) AS count FROM email WHERE (user_id=$user_id OR ip=\"$ip\") AND ((sent IS NOT NULL AND sent > $t) OR requested > $t);"; // MySql already makes sure that only one pending email exists per user_id
+	$rows = get_db_rows($sql);
+	if(!$rows || !count($rows))
+		die(dLog("Error in send_confirmation_email(), bailing"));
+	
+	if($rows[0]->count > MAX_EMAILS_PER_HOUR){
+		$resp['status'] = 'email_limit_exceeded';
+		return false;		
+	}
+
+	$sql = "INSERT INTO email (email, user_id, ip) VALUES($email, $user_id, " . $_SERVER['SERVER_ADDR'] . " )";
+	
+	$message = file_get_contents(ACTIVATION_EMAIL_FILE);
+	if(!$message){
+		dLog("Error retrieving file in send_confirmation_email()");
+		return NULL;		
+	}
+	
 	
 	$tkn = array(
-		'user_id' => $fields['email_hash'],
-		
-		
+		'user_id' => $user_id,		
+		'type' => 'activate_account',
 	);
-	$message = str_replace('@activation_link@', )
 	
-	
-	Thank you for signing up to chatSpark!\To activate your account please click on the link below.
-	
-	
+	$message = str_replace('@activation_link@', ACTIVATION_ENDPOINT . '?' . encode_token($tkn));
+	$resp['status'] = 'confirmation_email_sent';
+	return mail( $email, "Account activation for your new chatSpark account", $message );	
 }
 
 function find_rq_by_type(&$rqs, $type, $callback, &$resp) {
@@ -161,53 +187,38 @@ function find_rq_by_type(&$rqs, $type, $callback, &$resp) {
 				$resp['rqid'] = $rq->rqid;
 				$resp['status'] = 'multiple_items';
 				$resp['success'] = FALSE;
+				dLog("Error: Multiple matching requests found");
 				return NULL;
 			}
 	}
 	if($rqt === NULL)
 		return FALSE;
-	$callback($rq, &$resp);
-	return TRUE;
 	
+	$resp['rqid'] = $rqt->rqid;
+	
+	$callback($rq, $resp);
+	return TRUE;
 }
 
-if(!isset($_SERVER[PHP_AUTH_DIGEST]) || !decode_token($_SERVER[PHP_AUTH_DIGEST])){
-	$rqs = find_rqs_by_type($rq_list, 'login');
-	$l = count($rqs);
-	if($l==0){
-		$rqs = find_rqs_by_type($rq_list, 'new_account');
-		if(count($rqs)==1){
-			create_response($rqs[0]->rqid, array(
-				'result' => create_new_account($rqs[0], $fields_resp),
-				'fields' => $fields_resp,				
-			)); // Not verified until they answer their email confirmation
-		}
-		else
-			invalid_status_response('login_needed');
-	}
-	elseif($l == 1){
-		$k = key($rqs);
-		if(!login_user($rqs[$k]->user, $rqs[$k]->password, $status))
-			invalid_status_response($status);
-		else
+if(!isset($_SERVER['PHP_AUTH_DIGEST']) ||
+	!($token = decode_token($_SERVER['PHP_AUTH_DIGEST']) )){
+	$resp = array();
+	if(find_rq_by_type($rq_list, 'login', 'login_user', $resp)){
+		if($resp['status'] == 'logged_in')
 			$verified = TRUE;
-		unset($rq_list[$k]);
+		create_response($resp);
 	}
-	else {
-		dLog("Multiple login requests in same batch, headers:", getallheaders());
-		dLog("Multiple login requests in same batch, params:", $rq_list);
-	}
+	elseif(find_rq_by_type($rq_list, 'new_account', 'create_new_account', $resp))
+		create_response($resp);
 }
 else
 	$verified = TRUE;
 
 if(!$verified){
-	write_response();
+	write_responses();
 	end_all();
 	exit(1);
 }
-
-$headers['Authorization'] = "Bearer " . JWT::encode($token, $rsa_priv_key, 'RS256'); // todo this should be further down
 
 
 foreach($rq_list as $rq){
@@ -232,7 +243,10 @@ function add_to_response($arr, $rqid){
 	);
 }
 
-write_response(); // duplicated functionality from above, but it's much safer to have clean code flow for authentication stuff
+
+$headers['Authorization'] = "Bearer " . encode_token($token); // todo this should be further down
+write_responses(); // duplicated functionality from above, but it's much safer to have clean code flow for authentication stuff
+
 end_all();
 exit(0);
 
@@ -244,19 +258,20 @@ function get_file_details($lang = 'en'){
 	return $files;
 }
 
-function login_user($email_hash, $password_hash, &$status){
-	global $token, $headers, $rsa_priv_key;
-	$sql = "SELECT * FROM users WHERE email_hash=\"$email_hash\"";
+function login_user(&$rq, &$resp){ //$email_hash, $password_hash, &$status){
+	global $token;
+	$sql = "SELECT * FROM users WHERE email_hash=\"" . $rq->data->email_hash . "\"";
 	$rows = get_db_rows($sql);
 	if(count($rows)==0){
-		$status = 'user_not_found';
-		return false;		
+		$resp['status'] = 'user_not_found';
+		return false;	
 	}
-	if($rows[0]->password_hash != $password_hash){
-		$status = 'incorrect_password';
+	if($rows[0]->password_hash != $rq->data->password_hash){
+		$resp['status'] = 'incorrect_password';
 		return false;
 	}
 	
+	$resp['status'] = 'logged_in';
 	
 	$t = time();
 	$token = array(
@@ -267,13 +282,5 @@ function login_user($email_hash, $password_hash, &$status){
 	);
 	return true;
 }
-
-function decode_token(){
-	global $token;
-	$token = JWT::decode($jwt, $publicKey, array('RS256'));
-	return $verified = !!$token;
-}
-
-
 
 ?>

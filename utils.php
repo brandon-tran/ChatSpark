@@ -19,7 +19,11 @@ function init_mysql(){
 
 function get_db_rows($sql){
 	global $mysql_conn;
-	$result = $mysql_conn->query($sql);
+	$result = do_sql($sql);
+	if(!$result){
+		dLog("Error in get_db_rows() for query: $sql");
+		return NULL;
+	}
 	$rows = array();
     while($obj = $result->fetch_object()) 
 		array_push($rows, $obj);
@@ -31,7 +35,7 @@ function do_sql($sql){
 	dLog("do_sql() sql=$sql");
 	$result = $mysql_conn->query($sql);
 	if(!$result)
-		dLog( 'do_sql() Error message: ' . $mysql_conn->error);
+		dLog( 'do_sql() Query: $sql \n Error message: ' . $mysql_conn->error);
 	return $result;	
 }
 
@@ -161,6 +165,25 @@ function create_stored_procedure($proc){
 	
 	dLog("Procedure $proc_name successfully created");
 	return true;
+}
+
+
+
+function decode_token($tkn){
+	return JWT::decode($tkn, $publicKey, array('RS256'));
+}
+
+function encode_token($tkm){
+	global $rsa_priv_key;
+	return JWT::encode($token, $rsa_priv_key, 'RS256');	
+}
+
+function implode_sql($arr){
+	$s = "";
+	foreach($arr as &$v)
+		if(!is_int($v))
+			$v = "\"$v\"";
+	return implode(',', $arr);
 }
 
 ?>

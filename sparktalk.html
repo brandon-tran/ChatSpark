@@ -42,38 +42,15 @@ catch(e){
 	qData = {};
 }
 
-function authenticate(){
-	
-}
-
-function getUpdates(){
-	get(serverAddress, function(data){
-		
-	
-	
-	});
-
-}
-
-function updateDictionary(url){
-
-
-}
-
-
-
 currentPath = qData.userQuestions;
 
-function mergeAssocArrays(arr1, arr2){
-	for(var i in arr2)
-		if(i in arr1){
-			if(Array.isArray(arr1[i]))
-				mergeArrays(arr1[i], arr2[i]);
-		}			
-		else
-			arr1[i] = arr2[i];
+function login_callback(resp){
+	
 }
 
+function new_account_callback(resp){
+	
+}
 
 function getFirstArrKey(arr){
 	for(var i in arr)
@@ -357,30 +334,32 @@ function dispatchRequests(rqs){
 	var d;
 	for(let rq of rqs){
 		if('data' in rq){
-			d = {type: rq.type, data: rq.data, id: rqId};
+			d = {type: rq.type, data: rq.data, rqid: rqId};
 			rq.data = null; //reclaim space
 		}
 		else
 			d = {type: rq.type, id: rqId};
 		rqsM[rqId] = d;
 		pendingAJAXCallbacks[rqId] = rq.callback;
+		delete rq.callback;
 		rqId++;
 	}
 	
-	function callbackAll(data){
-		for(rqid in data){ // todo: add error handling code
-			if(!(rqid in pendingAJAXCallbacks)){
-				sLog("Error: No callback found for rqId:" + rqid);
+	function callbackAll(responses){
+		for(let response of responses){ // todo: add error handling code
+			
+			if(!(response.rqid in pendingAJAXCallbacks)){
+				sLog("Error: No callback found for response.rqid:" + response.rqid);
 				continue;
 			}
-			if(('deferred' in data) && deferred.data) // data to be returned in future request
+			if(('deferred' in response) && response.deferred) // data to be returned in future request
 				continue;
-			pendingAJAXCallbacks[rqid](data[rqid]);
-			delete pendingAJAXCallbacks[rqid]; // mark as having been run
+			pendingAJAXCallbacks[response.rqid](response);
+			delete pendingAJAXCallbacks[response.rqid]; // mark as having been run
 		}
-		for(rqid in pendingAJAXCallbacks){
-			sLog("Error: No server response/deferral for rqId: " + rqid + ", deleting.");
-			delete pendingAJAXCallbacks[rqid];
+		for(response.rqid in pendingAJAXCallbacks){
+			sLog("Error: No server response/deferral for response.rqid: " + response.rqid + ", deleting.");
+			delete pendingAJAXCallbacks[response.rqid];
 		}
 	}
 	post(rqEndpoint, rqsM, { success: callbackAll });
@@ -485,7 +464,7 @@ function setDaysForMonth(b){
 
 function initBirthday(){
 	var y = new Date(Date.now()).getFullYear();
-	var maxYear = y - 12, minYear = y - 100;
+	var maxYear = y - 10, minYear = y - 100;
 	var b = document.forms['new_account'];
 	
 	for(var i = maxYear; i >= minYear; i--){ // year
@@ -502,7 +481,7 @@ function initBirthday(){
 		b.elements['day'].append(o);
 	}
 	
-	var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	//var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 	for(var locale = getLocale(), d = new Date(), i = 0; i < 12; i++){
 		var o = document.createElement('option');
@@ -523,7 +502,7 @@ function getLocale(){
 	return 'languages' in navigator ? navigator.languages[0] : navigator.language;
 }
 
-function getForm(btn){
+function getFormEl(btn){
 	while(btn.tagName != 'FORM')
 		btn = btn.parentNode;
 	return btn;
@@ -538,18 +517,30 @@ function getFormData(frm){
 	for(let inp of document.forms[frm.name].elements){
 		if(!('name' in inp))
 			continue;
+			
+		if(inp.classList.contains('invalid_input'))
+			valid = false;
+		else if(('checkValidity' in inp) && !inp.checkValidity()){
+			inp.classList.add('invalid_input');
+			valid = false;
+		}
 		
 		data[inp.name] = inp.value;
 		var onsb = inp.getAttribute('data-onsubmit'); // must return Promise
 		if(onsb)
 			promises.push( window[onsb](data, inp.name) );
 	}
+	
+	for(let rd of document.forms[frm.name].getElementsByClassName('radio_container')){
+		data[rd.name] = document.forms[frm.name].elements[rd.name].value;
+		if(data[rd.name]==""){
+			rd.classList.add('invalid_input');
+			valid = false;
+		}
+	}
 		
 	return Promise.all(promises).then(function(){
-		return  valid ? {
-			type: frm.getAttribute('data-formtype'),
-			data: data
-		} : null;
+		return  valid ? data : null;
 	});
 }
 
@@ -562,7 +553,7 @@ function mkScript(src){
 }
 
 function hash(arr, key){
-	var hashKeyName = key + '-hash';
+	var hashKeyName = key + '_hash';
 	return crypto.subtle.digest("SHA-256", new TextEncoderLite().encode(arr[key].concat(commonSalt))).then(
 	(hash) =>  { 
 		return arr[hashKeyName] = base64js.fromByteArray(new Uint8Array(hash));
@@ -591,11 +582,11 @@ function resetForm(f){
 				el.value = '';
 				break;
 		}
-	f.className.remove('error');
+	f.classList.remove('error');
 }
 
 function submitData(){
-	var frm = getForm(this);
+	var frm = getFormEl(this);
 	var prm = getFormData(frm);
 	prm.then( (d) => {
 	
@@ -609,22 +600,22 @@ function submitData(){
 		dispatchRequests([{
 			type: frm.getAttribute('data-formtype'),
 			data:	d,
-			id: rqId++
+			rqid: rqId++,
+			callback: window[frm.getAttribute('data-callback')]
 		}]);
 
 	} );
 }
 
 function chkInputField(ev){
-	/*if(!('checkValidity' in ev.target))
-		return;*/
-
+	if(!('checkValidity' in ev.target))
+		return;
+	
 	var els = document.getElementsByName(ev.target.name);
-	if(ev.target.checkValidity())
-		for(var el of els)
+	for(var el of els)
+		if(ev.target.checkValidity())
 			el.classList.remove('invalid_input');
-	else
-		for(var el of els)
+		else
 			el.classList.add('invalid_input');
 }
 
@@ -690,9 +681,7 @@ function clearUserData(){
 <div id='textwrapper' class="screen">
 <div id='textpane'>
 </div>
-<!--
-<footer><div class='footer_right'><span>&#x1f399;<span></div><div class='footer_left'><div>Type your text here</div></div></footer>
--->
+
 <div class='clear_float'></div>
 <footer>
 Type a message...<br>
@@ -702,7 +691,7 @@ Type a message...<br>
 
 
 <div class='screen config_screen' id='login_page'>
-<form data-formtype="login" name='login_page'>
+<form data-formtype="login" data-callback='login_callback' name='login_page'>
 <input data-onsubmit='hashDelOriginal' name='login_name' type='email' required placeholder="example@me.com"></input><br/>
 <input data-onsubmit='hashDelOriginal' name='password' type='password' required placeholder="Password"></input><br/><br/>
 <div class='centered_buttons'>
@@ -715,7 +704,7 @@ Type a message...<br>
 
 
 <div class='config_screen screen' id='new_account'>
-<form data-formtype="new_account" name='new_account'>
+<form data-formtype="new_account" data-callback='new_account_callback' name='new_account'>
 <!-- <input required placeholder='First Name' name='first_name' type='text'></input><br>
 <input required placeholder='Surname' name='surname' type='text'></input><br/> -->
 <input required placeholder='example@me.com' name='email' type='email' data-onsubmit='hash'></input><br/>
