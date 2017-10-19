@@ -2,6 +2,12 @@
 // include('JWT.php');
 include('globals.php');
 include('utils.php');
+use \jwt
+include('JWT.php');
+include('BeforeValidException.php');
+include('ExpiredException.php');
+include('SignatureInvalidException.php');
+
 
 // TODO verify token here
 
@@ -9,7 +15,10 @@ include('utils.php');
 $rq_list = json_decode(file_get_contents("php://input"), false);
 
 $response = array();
+$headers = array();
 $verified = false;
+$token = array();
+
 
 if(json_last_error() != JSON_ERROR_NONE){
 	die(dLog("Invalid call, dumping headers", getallheaders()));
@@ -25,8 +34,8 @@ function find_rqs_by_type($rq_list, $type){
 	return $rqs;
 }
 
-function status_response($status){
-	global $response;
+function invalid_status_response($resp, $rq){
+	global $response, $rsa_pub_key;
 	if(!array_key_exists(0, $response))
 		$response[0] = array();
 	array_push($response[0], 
@@ -39,8 +48,10 @@ function status_response($status){
 }
 
 function write_response(){
-	global $response;
-	echo json_encode($response);	
+	global $response, $headers;
+	foreach($headers as $k => $field)
+		header("$k:$field");
+	echo json_encode($response);
 }
 
 function create_response($rqid, $data = array()){
@@ -62,38 +73,83 @@ function chk_fields_present($field_names, $arr){
 	return count($res) > 0 ? $res : TRUE;
 }
 
-function create_new_account($data, &$fields_resp){
+function create_new_account($rq, &$resp){
+	global $mysql_conn;
 	$valid = TRUE;
-	$res = chk_fields_present(array('email', 'gender', 'day', 'month', 'year'), $data);
+	$resp['fields'] = array();
+	static $req_fields = array('email', 'email-hash', 'gender', 'day', 'month', 'year');
+	$res = chk_fields_present($req_fields, $rq->data);
 	if($res !== TRUE){
 		$valid = FALSE;
-		$fields_resp = $res;
+		$resp['fields'] = $res;
 	}
-	if(!array_key_exists('invalid', $res))
-		$res['invalid'] = array();
 	
-	if(!filter_var($data['email'], FILTER_VALIDATE_EMAIL)){
+	if(!array_key_exists('invalid', $res))
+		$resp['fields']['invalid'] = array();
+	
+	if(!filter_var($rq->data['email'], FILTER_VALIDATE_EMAIL)){
 		$valid = FALSE;
-		array_push($res['invalid'], 'email');		
+		array_push($resp['fields']['invalid'], 'email');		
 	}
 	if(!in_array($res['gender'], array('male', 'female', 'other'))){
 		$valid = FALSE;
-		array_push($res['invalid'], 'gender');		
+		array_push($resp['fields']['invalid'], 'gender');		
 	}
 	if($valid)
-		unset($res['invalid']);
-	else
+		unset($resp['fields']['invalid']);
+	else {
+		$resp['status'] = 'field_error';
 		return FALSE;
+	}
 	
-	$email_hash = 
-	$sql = "INSERT INTO users ()"
-	mail( $email,  $subject , string $message
+	$wr_fields = $rq->data;
+	unset $wr_fields['email'];
+	$wr_fields['email_hash_hash'] = hash('CRC32', $rq_fields['email_hash']);
+	
+	$sql = "INSERT INTO users (" . implode(',', array_keys($wr_fields)) . ") VALUES("  . implode(',', array_values($wr_fields)) . ");";
+	
+	if(!do_sql($sql))
+		switch(mysqli_errno($mysql_conn)){
+			case ER_DUP_ENTRY_WITH_KEY_NAME:
+				dLog("User account already created");
+				$resp['status'] = 'existing_user';
+				return FALSE;
+			break;
+			default:
+				dLog("mysql Error");
+				$resp['status'] = 'error';
+				return FALSE;
+		}
+	
+	send_confirmation_email($rq->data['email']);	
 }
 
+function send_confirmation_email($email){
+	mail( $rq->data['email'],  $subject , string $message	
+	
+}
 
+function find_rq_by_type(&$rqs, $type, $callback, &$resp) {
+	$rqt = NULL;
+	foreach($rqs as $k => &$rq){
+		if(isset($rq->type) && ($rq->type==$type))
+			if($rqt===NULL)
+				$rqt = &$rq; // keep looping in case there's more than one, throw an error if that occurs
+			else {
+				$resp['rqid'] = $rq->rqid;
+				$resp['status'] = 'multiple_items';
+				$resp['success'] = FALSE;
+				return NULL;
+			}
+	}
+	if($rqt === NULL)
+		return FALSE;
+	$callback($rq, &$resp);
+	return TRUE;
+	
+}
 
-
-if(!isset($_SERVER['Authorization']) || !verify_token($_SERVER['Authorization'])){
+if(!isset($_SERVER[PHP_AUTH_DIGEST]) || !decode_token($_SERVER[PHP_AUTH_DIGEST])){
 	$rqs = find_rqs_by_type($rq_list, 'login');
 	$l = count($rqs);
 	if($l==0){
@@ -102,16 +158,17 @@ if(!isset($_SERVER['Authorization']) || !verify_token($_SERVER['Authorization'])
 			create_response($rqs[0]->rqid, array(
 				'result' => create_new_account($rqs[0], $fields_resp),
 				'fields' => $fields_resp,				
-			));
+			)); // Not verified until they answer their email confirmation
 		}
 		else
-			status_response('login_needed');
+			invalid_status_response('login_needed');
 	}
 	elseif($l == 1){
 		$k = key($rqs);
-		if(!verify_user($rqs[$k]->user, $rqs[$k]->password))
-			status_response('invalid_login');
-		$verified = TRUE;
+		if(!login_user($rqs[$k]->user, $rqs[$k]->password, $status))
+			invalid_status_response($status);
+		else
+			$verified = TRUE;
 		unset($rq_list[$k]);
 	}
 	else {
@@ -119,12 +176,17 @@ if(!isset($_SERVER['Authorization']) || !verify_token($_SERVER['Authorization'])
 		dLog("Multiple login requests in same batch, params:", $rq_list);
 	}
 }
+else
+	$verified = TRUE;
 
 if(!$verified){
 	write_response();
 	end_all();
 	exit(1);
 }
+
+$headers['Authorization'] = "Bearer " . JWT::encode($token, $rsa_priv_key, 'RS256'); // todo this should be further down
+
 
 foreach($rq_list as $rq){
 	switch($rq->type){
@@ -158,6 +220,36 @@ function get_file_details($lang = 'en'){
 	foreach($rows as $row)
 		array_push($files, $row['file']);
 	return $files;
+}
+
+function login_user($email_hash, $password_hash, &$status){
+	global $token, $headers, $rsa_priv_key;
+	$sql = "SELECT * FROM users WHERE email_hash=\"$email_hash\"";
+	$rows = get_db_rows($sql);
+	if(count($rows)==0){
+		$status = 'user_not_found';
+		return false;		
+	}
+	if($rows[0]->password_hash != $password_hash){
+		$status = 'incorrect_password';
+		return false;
+	}
+	
+	
+	$t = time();
+	$token = array(
+		'user_id' => $rows[0]->user_id,
+		'created' => $t,
+		'issued_by' => $_SERVER[SERVER_ADDR],
+		'check_after' => $t + STEP_TIME_BEFORE_PASSWORD_UPDATE_CHECK, // the time after which it should be checked to see if there has been a password update
+	);
+	return true;
+}
+
+function decode_token(){
+	global $token;
+	$token = JWT::decode($jwt, $publicKey, array('RS256'));
+	return $verified = !!$token;
 }
 
 

@@ -538,27 +538,12 @@ function getFormData(frm){
 	for(let inp of document.forms[frm.name].elements){
 		if(!('name' in inp))
 			continue;
-		/*if('checkValidity' in inp){
-			if(inp.checkValidity()){
-				inp.classList.remove('invalid_input');				
-			}
-			else {
-				valid = false;
-				inp.classList.add('invalid_input');
-				invalidNames[inp.name] = true;
-				continue;
-			}
-		}*/
 		
 		data[inp.name] = inp.value;
 		var onsb = inp.getAttribute('data-onsubmit'); // must return Promise
 		if(onsb)
 			promises.push( window[onsb](data, inp.name) );
 	}
-	
-	/*for(var n in invalidNames)
-		for(var el of document.getElementsByName(n))
-			el.classList.add('invalid_input');*/
 		
 	return Promise.all(promises).then(function(){
 		return  valid ? {
@@ -577,10 +562,15 @@ function mkScript(src){
 }
 
 function hash(arr, key){
+	var hashKeyName = key + '-hash';
 	return crypto.subtle.digest("SHA-256", new TextEncoderLite().encode(arr[key].concat(commonSalt))).then(
 	(hash) =>  { 
-		return arr[key] = base64js.fromByteArray(new Uint8Array(hash));
+		return arr[hashKeyName] = base64js.fromByteArray(new Uint8Array(hash));
 	});
+}
+
+function hashDelOriginal(arr, key){
+	return hash(arr, key).then(() => { delete arr[key]; });
 }
 
 function setDefEmail(){
@@ -713,8 +703,8 @@ Type a message...<br>
 
 <div class='screen config_screen' id='login_page'>
 <form data-formtype="login" name='login_page'>
-<input data-onsubmit='hash' name='login_name' type='email' required placeholder="example@me.com"></input><br/>
-<input data-onsubmit='hash' name='password' type='password' required placeholder="Password"></input><br/><br/>
+<input data-onsubmit='hashDelOriginal' name='login_name' type='email' required placeholder="example@me.com"></input><br/>
+<input data-onsubmit='hashDelOriginal' name='password' type='password' required placeholder="Password"></input><br/><br/>
 <div class='centered_buttons'>
 <div class='button submit default_button'>Login</div>
 <div class='button button_link' data-link="new_account">Create Account</div>
@@ -728,8 +718,8 @@ Type a message...<br>
 <form data-formtype="new_account" name='new_account'>
 <!-- <input required placeholder='First Name' name='first_name' type='text'></input><br>
 <input required placeholder='Surname' name='surname' type='text'></input><br/> -->
-<input required placeholder='example@me.com' name='email' type='email'></input><br/>
-
+<input required placeholder='example@me.com' name='email' type='email' data-onsubmit='hash'></input><br/>
+<input data-onsubmit='hashDelOriginal' name='password' type='password' required placeholder="Password"></input>
 <fieldset required class='radio_container' name='gender'>
 <input required type="radio" name="gender" id='male' value="male">
 <label for="male">Male</label>
