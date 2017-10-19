@@ -1,7 +1,6 @@
 <?php
-include('globals.php');
 include('utils.php');
-include('jwt/JWT.php');
+
 
 
 $rq_list = json_decode(file_get_contents("php://input"), false);
@@ -172,9 +171,14 @@ function send_confirmation_email($email, $user_id, &$resp){
 		'type' => 'activate_account',
 	);
 	
-	$message = str_replace('@activation_link@', ACTIVATION_ENDPOINT . '?' . encode_token($tkn));
-	$resp['status'] = 'confirmation_email_sent';
-	return mail( $email, "Account activation for your new chatSpark account", $message );	
+	$message = str_replace('@activation_link@', ACTIVATION_ENDPOINT . '?' . encode_token($tkn), $message);
+	dLog("send_confirmation_email() message:\n $message");
+	if(mail( $email, "Account activation for your new chatSpark account", $message )){
+		$resp['status'] = 'confirmation_email_sent';
+		return TRUE;
+	}	
+	$resp['status'] = 'email_send_error';
+	return NULL;
 }
 
 function find_rq_by_type(&$rqs, $type, $callback, &$resp) {

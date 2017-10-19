@@ -2,18 +2,16 @@
 $debug = TRUE;
 
 
-$mysql_servername = "localhost";
-$mysql_username = "sparktalk_user";
-$mysql_password = "NMdWMg43ysLfRvYk";
-$mysql_db = "sparktalk";
+define('MYSQL_SERVER', 'localhost');
+define('MYSQL_USERNAME', 'chatspark_user');
+define('MYSQL_PASSWORD', 'NMdWMg43ysLfRvYk');
+define('MYSQL_DB', 'chatspark');
 $mysql_conn = NULL;
-
 
 $log_file = "F:\\Hosting\\Logs\\sparktalk.log";
 
 if($debug)
 	file_put_contents($log_file, "");
-
 
 $dropbox_key = "ptx5vdfpqpu6ep8";
 $dropbox_secret = "evrzwbig18c0r3t";
@@ -25,8 +23,8 @@ define('ACTIVATION_ENDPOINT', SERVER_ADDRESS . '/activate.php');
 
 define('STEP_TIME_BEFORE_PASSWORD_UPDATE_CHECK', 3600);
 define('ER_DUP_ENTRY', 1062); // from mysqld_error.h
-define('FILE_DIR', ''); // TODO change this
-define('ACTIVATION_EMAIL_FILE', FILE_DIR . '/activation_email.html');
+define('FILE_DIR', '.'); // TODO change this
+define('ACTIVATION_EMAIL_FILE', FILE_DIR . DIRECTORY_SEPARATOR . 'activation_email.html');
 define('MAX_EMAILS_PER_HOUR', 5);
 define('MIN_AGE', 10);
 define('MAX_AGE', 100);

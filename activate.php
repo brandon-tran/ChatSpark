@@ -1,5 +1,4 @@
 <?php
-include('globals.php');
 include('utils.php');
 
 $tkn = decode_token($_SERVER['QUERY_STRING']);

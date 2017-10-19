@@ -1,4 +1,7 @@
 <?php
+include('globals.php');
+
+include('jwt' . DIRECTORY_SEPARATOR . 'JWT.php');
 
 function init(){
 	init_mysql();
@@ -9,12 +12,12 @@ function install(){ // run this once on a new machine
 }
 
 function init_mysql(){
-	global $mysql_servername, $mysql_username, $mysql_password, $mysql_conn, $mysql_db;
+	global $mysql_conn;
 	
-	$mysql_conn = new mysqli($mysql_servername, $mysql_username, $mysql_password, $mysql_db);
+	$mysql_conn = new mysqli(MYSQL_SERVER, MYSQL_USERNAME, MYSQL_PASSWORD, MYSQL_DB);
 	if ($mysql_conn->connect_error) 
-		die(dLog("Connection failed: " . $mysql_conn->connect_error));
-	dLog("Connected successfully to MySql server: $mysql_servername");	
+		die(dLog('Connection failed: ' . $mysql_conn->connect_error));
+	dLog('Connected successfully to MySql server: ' . MYSQL_SERVER);
 }
 
 function get_db_rows($sql){
@@ -167,15 +170,14 @@ function create_stored_procedure($proc){
 	return true;
 }
 
-
-
 function decode_token($tkn){
-	return JWT::decode($tkn, $publicKey, array('RS256'));
+	global $rsa_pub_key;
+	return JWT::decode($tkn, $rsa_pub_key, array('RS256'));
 }
 
-function encode_token($tkm){
+function encode_token($tkn){
 	global $rsa_priv_key;
-	return JWT::encode($token, $rsa_priv_key, 'RS256');	
+	return JWT::encode($tkn, $rsa_priv_key, 'RS256');	
 }
 
 function implode_sql($arr){

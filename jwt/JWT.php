@@ -1,10 +1,10 @@
 <?php
 
-namespace Firebase\JWT;
+/* namespace Firebase\JWT;
 use \DomainException;
 use \InvalidArgumentException;
 use \UnexpectedValueException;
-use \DateTime;
+use \DateTime; */
 
 /**
  * JSON Web Token implementation, based on this spec:
