@@ -68,7 +68,7 @@ function do_sql_multi($sql){
 }
 
 
-function get_user_var($var_name, $default){
+function get_user_by_email_hash_var($var_name, $default){
 	$row = get_db_rows("SELECT value FROM vars WHERE name='$var_name'");
 	if(count($row)!=1)
 		return $default;

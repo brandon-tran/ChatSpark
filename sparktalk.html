@@ -12,17 +12,7 @@ rqId = 1;  // rqId=0 reserved for system messages
 errNoticeTimeout = 3000;
 commonSalt = [52, 114, 250, 27, 157, 4, 78, 96, 51, 65, 236, 143, 107, 225, 131, 247, 20, 136, 102, 37, 253, 125];
 
-if('auth' in localStorage){
-	try {
-		auth = JSON.parse(localStorage);
-	}
-	catch(e){
-		auth = {};
-		localStorage.removeItem('auth');	
-	}
-}
-else
-	auth = {};
+
 
 function initTestQuestions(){
 	var sampleStrings = [ "Context", "Work", "Social", "Date", "Topic", "Basketball &#x1F3C0;", "Cricket", "What day is it?", "Why 1 sdf sdiusdf zuhzsdf uzsd fiu iuoiuzoiub sd07h zs 8zsdf yb zshbdfsdf?", "Why 2?", "Why 3?"];
@@ -218,6 +208,7 @@ function writeMenuAndOptions(path, parentNode){
 }
 
 function createLongPressHandler(el){
+	return; // disable for now
 	var timer = null;
 	
 	el.onmousedown = function(ev){
@@ -348,6 +339,22 @@ window.onload  = function(){ //test code
 	for(let b of document.getElementsByClassName('submit'))
 		b.onclick = submitData;
 	initListeners();
+	initLinkedPasswordInputs();
+	if('auth' in localStorage){
+		try {
+			auth = JSON.parse(localStorage);
+			document.body.setAttribute('data-logged-in', true);
+		}
+		catch(e){
+			auth = {};
+			localStorage.removeItem('auth');
+			ldPage('login_page');
+		}
+	}
+	else {
+		auth = {};
+		ldPage('login_page');
+	}
 }
 
 
@@ -613,6 +620,11 @@ function hashDelOriginal(arr, key){
 	return hash(arr, key).then(() => { delete arr[key]; });
 }
 
+function delInput(arr, key){
+	delete arr[key];
+	return Promise.resolve(true);
+}
+
 function setDefEmail(){
 	if('email' in window.localStorage)
 		for(let el of document.querySelectorAll("input[type='email']"))
@@ -656,7 +668,28 @@ function submitData(){
 	} );
 }
 
+function cmpLinkedPasswordInputs(el, le){
+	el.classList.add('changed');
+	if(countElsOfClass(els, 'changed') > 1){
+		for(el of le)
+			el.classList.add('unmatched');
+			
+	}
+
+	function countElsOfClass(els, cls){
+		var n = 0;
+		for(let el of els)
+			if(el.classList.containes(cls))
+				n++;
+		return n;
+	}
+}
+
 function chkInputField(ev){
+	var le = ev.target.getAttribute('data-linkedpasswordinput');
+	if(le)
+		return cmpLinkedPasswordInputs(ev.target, le);
+
 	if(!('checkValidity' in ev.target))
 		return;
 	
@@ -688,14 +721,28 @@ function initListeners(){
 	
 }
 
-function ldPage(ev){
+function initLinkedPasswordInputs(){
+	var linkedPasswordInputs = {};
+	for(let i of document.querySelectorAll("input[data-linkedpasswordinput]")){
+		var j = i.getAttribute('data-linkedpasswordinput');
+		if(!(j in linkedPasswordInputs))
+			linkedPasswordInputs[j] = [];
+		linkedPasswordInputs.push(i);
+		i.setAttribute('data-linkedpasswordinput', linkedPasswordInputs[j]);
+	}
+}
+
+function ldPage(ev){ // load by id or event
 	console.log('ldPage()');
+	var pgId = typeof ev == 'object' ? ev.target.getAttribute('data-link') : ev;
+	
+	
 	if(typeof TextEncoderLite == 'undefined'){
 		mkScript('base64js.min.js');
 		mkScript('text-encoder-lite.js');
 	}
 	
-	var pgId = ev.target.getAttribute('data-link');
+	
 	document.body.className = pgId;
 	var el = document.getElementById(pgId);
 	if('data-onload' in el){
@@ -718,11 +765,11 @@ function clearUserData(){
 </script>
 
 </head>
-<body data-logged-in>
+<body>
 <header><div class='button_link' data-link="login_page" id='nav'>&#x2b05;</div><div id='menu_btn'>&#x22ee;
 <div id='menu'>
 <div class='button_link' data-link="login_page" id='logout'>Logout</div>
-<div class='button_link' data-link='settings_page' id='settings'>Settings</div>
+<!-- <div class='button_link' data-link='settings_page' id='settings'>Settings</div> -->
 </div>
 
 </div>
@@ -747,6 +794,7 @@ Type a message...<br>
 <div class='centered_buttons'>
 <div class='button submit default_button'>Login</div>
 <div class='button button_link' data-link="new_account">Create Account</div>
+<div class='button button_link' data-link="update_password">Update Password</div>
 <div class='button button_link' data-link="reset_password">Forgot Password</div>
 </div>
 </form>
@@ -795,6 +843,15 @@ Please enter your email address<br/>
 <form name='settings_page'>
 Settings here<br/>
 
+<div class='submit submit_btn button default_button'>Submit</div>
+</form>
+</div>
+
+<div class='config_screen screen' id='update_password'>
+<form name='update_password'>
+<input data-onsubmit='hashDelOriginal' name='password_old' type='password' required placeholder="Enter old password"></input>
+<input data-linkedpasswordinput='1' data-onsubmit='hashDelOriginal' name='password_new' type='password' required placeholder="Enter new password"></input>
+<input data-linkedpasswordinput='1' data-onsubmit='delInput' name='password_new2' type='password' required placeholder="Re-enter new password"></input>
 <div class='submit submit_btn button default_button'>Submit</div>
 </form>
 </div>

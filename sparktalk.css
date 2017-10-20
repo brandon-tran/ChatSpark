@@ -244,7 +244,7 @@ header > div {
 }
 
 
-body.settings_page #settings_page, body.login_page:not([data-logged-in]) #login_page, body.new_account:not([data-logged-in]) #new_account, body.reset_password:not([data-logged-in]) #reset_password {
+body.settings_page #settings_page, body.login_page:not([data-logged-in]) #login_page, body.new_account:not([data-logged-in]) #new_account, body.reset_password:not([data-logged-in]) #reset_password, body.update_password:not([data-logged-in]) #update_password {
 	display: block;
 }
 
@@ -282,6 +282,10 @@ body[data-logged-in]:not(.settings_page) #textwrapper {
 
 .reset_password #nav::after {
 	content: "Reset Password";	
+}
+
+.update_password #nav::after {
+	content: "Update Password";	
 }
 
 .login_page #nav::after {
