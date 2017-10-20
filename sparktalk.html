@@ -368,20 +368,24 @@ function dispatchRequests(rqs){
 	}
 	
 	function callbackAll(responses){
+		var deferred = [];
 		for(let response of responses){ // todo: add error handling code
 			
 			if(!(response.rqid in pendingAJAXCallbacks)){
 				sLog("Error: No callback found for response.rqid:" + response.rqid);
 				continue;
 			}
-			if(('deferred' in response) && response.deferred) // data to be returned in future request
+			if(('deferred' in response) && response.deferred){ // data to be returned in future request
+				deferred.push(response.rqid);
 				continue;
+			}
 			pendingAJAXCallbacks[response.rqid](response);
 			delete pendingAJAXCallbacks[response.rqid]; // mark as having been run
 		}
-		for(response.rqid in pendingAJAXCallbacks){
-			sLog("Error: No server response/deferral for response.rqid: " + response.rqid + ", deleting.");
-			delete pendingAJAXCallbacks[response.rqid];
+		for(var rqid in pendingAJAXCallbacks){
+			sLog("Error: No server response/deferral for response.rqid: " + rqid + ", deleting.");
+			if(deferred.indexOf(rqid)<0)
+				delete pendingAJAXCallbacks[response.rqid];
 		}
 	}
 	post(rqEndpoint, rqsM, { success: callbackAll });
@@ -568,6 +572,8 @@ function getFormData(frm){
 			valid = false;
 		}
 		
+		if('value' in inp)
+			inp.value = inp.value.trim();
 		data[inp.name] = inp.value;
 		var onsb = inp.getAttribute('data-onsubmit'); // must return Promise
 		if(onsb)

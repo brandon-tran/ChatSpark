@@ -27,7 +27,7 @@ $dropbox_token = "3Y9RfWQXvtAAAAAAAAAACNjjHLjVjP4jpaBZ67mV2RwXRuArIBtWT_xDE07fzS
 $genders = array('male', 'female', 'other');
 
 define('SERVER_ADDRESS', '127.0.0.1/sparktalk');
-define('ACTION_ENDPOINT', SERVER_ADDRESS . '/action.php');
+define('rq_endpoint', SERVER_ADDRESS . '/action.php');
 define('RQ_ENDPOINT', SERVER_ADDRESS . '/rq.php');
 
 define('STEP_TIME_BEFORE_PASSWORD_UPDATE_CHECK', 3600);
@@ -45,7 +45,7 @@ define('PASSWORD_RESET_EXPIRY', 3600);
 
 
 $commonSalt = [52, 114, 250, 27, 157, 4, 78, 96, 51, 65, 236, 143, 107, 225, 131, 247, 20, 136, 102, 37, 253, 125];
-
+$server_salt = [228,188,75,5,67,238,55,104,163,43,252,174,176,219,196,183,58,226,123,224,151,200,45,23,147,245,127,126,68,12,122,242,181,230,8,191,93,253,99,113,170,42,91,66,233,243,91,255,99,20];
 
 $rsa_priv_key = "-----BEGIN RSA PRIVATE KEY-----
 MIICXAIBAAKBgQCCjDjE7rxDQzxjIGVzxtG8GJgBXjb4SgvWfTxG/0abhdTkabTl

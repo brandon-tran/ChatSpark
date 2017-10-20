@@ -27,7 +27,7 @@ switch($tkn->type){
 		$html = str_replace('@rq_endpoint@', RQ_ENDPOINT, $html);
 		echo $html;
 		break;
-	case 'send_new_password':
+	case 'web_update_password':
 		if()
 		break;
 	default:

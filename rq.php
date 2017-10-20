@@ -113,6 +113,8 @@ function create_new_account($rq, &$resp){
 		
 	$wr_fields['email_hash_hash'] = CRC32($rq->data->email_hash);
 	
+	$wr_fields['password_hash'] = password_verify($wr_fields['password_hash'], PASSWORD_BCRYPT);
+	
 	$wr_fields['birthday'] = mktime(0,0,0, $rq->data->month + 1, $rq->data->day, $rq->data->year);
 	dLog("wr_fields:", $wr_fields);
 	dLog("wr_fields av:", array_values($wr_fields));
@@ -144,7 +146,7 @@ function reset_password(&$rq, &$resp){
 			'user_id' => $user_id,		
 			'type' => 'reset_password',
 			'expiry' => time() + 3600,
-			'password_hash' => $ph,
+			'password_hash' => mk_web_hash($user_id),
 		);
 		return str_replace('@reset_link@', rq_endpoint . '?' . encode_token($tkn), $message);
 	});
@@ -213,18 +215,34 @@ function find_rq_by_type(&$rqs, $type, $callback, &$resp) {
 				return NULL;
 			}
 	}
-	if($k === NULL)
+	if($k0 === NULL)
 		return FALSE;
 	
-	$resp['rqid'] = $rqs->$k->rqid;
+	$resp['rqid'] = $rqs->$k0->rqid;
 	
-	$callback($rqs->$k, $resp);
-	unset($rqs->$k);
+	$callback($rqs->$k0, $resp);
+	unset($rqs->$k0);
 	return TRUE;
 }
 
+function mk_web_hash($str){
+	global $server_salt;
+	$h = hash("SHA256", $str . pack('C*', ...$server_salt));
+	return password_hash( $h, PASSWORD_BCRYPT );
+}
+function verify_web_password_hash($user_id, $hash){
+	$sql = "SELECT password_hash FROM users WHERE user_id=$user_id";
+	$rows = get_db_rows($sql);
+	if(count($rows)!=1){
+		dLog("verify_web_password_hash() Error: Returning false");
+		return FALSE;
+	}
+	$p_hash = hash("SHA256", $rows[0]->password_hash . pack('C*', ...$server_salt), TRUE);
+	return password_verify($p_hash, $hash);	
+}
 
 function web_update_password(&$rq, &$resp){
+	global $server_salt;
 	$tkn = decode_token($rq->jwt);
 	
 	if(!$tkn){
@@ -237,19 +255,28 @@ function web_update_password(&$rq, &$resp){
 		$resp['status'] = 'link_expired';
 		return;
 	}
-	$sql = 'SELECT password_hash FROM users WHERE user_id="' . $tkn->user_id . ';"';
-	$rows = get_db_rows($sql);
-	
-	if(count($rows)==0){
+
+	if(!verify_web_password_hash($tkn->user_id, $tkn->password_hash)){
 		$resp['message'] = 'Password has already been changed';
 		$resp['status'] = 'already_reset';		
 		return;
 	}
 	
-	
+	$resp['message'] = 'Password successfully changed';
+	$resp['status'] = 'password_changed';
+	return update_password($tkn->user_id, $rq->data->password_hash);	
 }
 
-if(find_rq_by_type($rq_list, 'web_update_password', 'web_update_password'))
+function update_password($user_id, $password){
+	$sql = 'UPDATE users SET password_hash="' . hash_password($password, PASSWORD_BCRYPT) . '";';
+	return do_sql($sql);
+}
+
+if(find_rq_by_type($rq_list, 'web_update_password', 'web_update_password', $resp)){
+	add_to_response($resp);
+	write_responses();
+	end_all();
+}
 
 if(!isset($_SERVER['PHP_AUTH_DIGEST']) ||
 	!($token = decode_token($_SERVER['PHP_AUTH_DIGEST']) )){
@@ -286,12 +313,12 @@ foreach($rq_list as $rq){
 	}
 }
 
-function add_to_response($arr, $rqid){
+function add_to_response($resp){
 	global $response;
 	array_push($response, 
 		array(
-			'rqid' => $rqid,
-			'data' => $arr		
+			'rqid' => $resp['rqid'],
+			'data' => $resp	
 		)
 	);
 }
@@ -339,7 +366,7 @@ function login_user(&$rq, &$resp){ //$email_hash, $password_hash, &$status){
 		return false;
 	}
 	
-	if($row->password_hash != $rq->data->password_hash){
+	if(!password_verify($rq->data->password_hash, $row->password_hash)){
 		$resp['status'] = 'incorrect_password';
 		return false;
 	}
