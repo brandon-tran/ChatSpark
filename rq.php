@@ -230,6 +230,7 @@ function mk_web_hash($str){
 	$h = hash("SHA256", $str . pack('C*', ...$server_salt));
 	return password_hash( $h, PASSWORD_BCRYPT );
 }
+
 function verify_web_password_hash($user_id, $hash){
 	$sql = "SELECT password_hash FROM users WHERE user_id=$user_id";
 	$rows = get_db_rows($sql);

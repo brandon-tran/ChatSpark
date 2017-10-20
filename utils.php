@@ -3,6 +3,12 @@ include('globals.php');
 
 include('jwt' . DIRECTORY_SEPARATOR . 'JWT.php');
 
+function maintenance(){
+	$t = time() - 3600;
+	$sql = "DELETE FROM email WHERE requested < $t OR sent < $t";
+	do_sql($sql);	
+}
+
 function sanitize_object($obj){
 	foreach($obj as $k => $val)
 		if(is_scalar($val))
