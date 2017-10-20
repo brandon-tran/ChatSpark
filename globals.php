@@ -28,16 +28,21 @@ $genders = array('male', 'female', 'other');
 
 define('SERVER_ADDRESS', '127.0.0.1/sparktalk');
 define('ACTION_ENDPOINT', SERVER_ADDRESS . '/action.php');
+define('RQ_ENDPOINT', SERVER_ADDRESS . '/rq.php');
 
 define('STEP_TIME_BEFORE_PASSWORD_UPDATE_CHECK', 3600);
 define('ER_DUP_ENTRY', 1062); // from mysqld_error.h
 
 define('ACTIVATION_EMAIL_TEMPLATE', FILE_DIR . DIRECTORY_SEPARATOR . 'activation_email.html');
 define('PASSWORD_RESET_TEMPLATE', FILE_DIR . DIRECTORY_SEPARATOR . 'email_password_reset.html');
+define('PASSWORD_RESET_HTML', FILE_DIR . DIRECTORY_SEPARATOR . 'password_reset.html');
 
 define('MAX_EMAILS_PER_HOUR', 5);
 define('MIN_AGE', 10);
 define('MAX_AGE', 100);
+
+define('PASSWORD_RESET_EXPIRY', 3600);
+
 
 $commonSalt = [52, 114, 250, 27, 157, 4, 78, 96, 51, 65, 236, 143, 107, 225, 131, 247, 20, 136, 102, 37, 253, 125];
 

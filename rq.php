@@ -138,11 +138,15 @@ function create_new_account($rq, &$resp){
 
 function reset_password(&$rq, &$resp){
 	return send_email($email, $user_id, $resp, PASSWORD_RESET_TEMPLATE, function($message){
+		$sql = "SELECT password_hash FROM users WHERE user_id=$user_id";
+		$ph = get_db_rows($sql)[0]->password_hash;
 		$tkn = array(
 			'user_id' => $user_id,		
 			'type' => 'reset_password',
+			'expiry' => time() + 3600,
+			'password_hash' => $ph,
 		);
-		return str_replace('@reset_link@', ACTION_ENDPOINT . '?' . encode_token($tkn), $message);
+		return str_replace('@reset_link@', rq_endpoint . '?' . encode_token($tkn), $message);
 	});
 }
 
@@ -152,7 +156,7 @@ function send_confirmation_email($email, $user_id, &$resp){
 			'user_id' => $user_id,		
 			'type' => 'activate_account',
 		);
-		return str_replace('@activation_link@', ACTION_ENDPOINT . '?' . encode_token($tkn), $message);
+		return str_replace('@activation_link@', rq_endpoint . '?' . encode_token($tkn), $message);
 	});	
 }
 
@@ -218,6 +222,34 @@ function find_rq_by_type(&$rqs, $type, $callback, &$resp) {
 	unset($rqs->$k);
 	return TRUE;
 }
+
+
+function web_update_password(&$rq, &$resp){
+	$tkn = decode_token($rq->jwt);
+	
+	if(!$tkn){
+		$resp['message'] = 'An error has occurred. Please restart the reset process';
+		$resp['status'] = 'token_error';
+		return;
+	}
+	if($tkn->expiry < time()){
+		$resp['message'] = 'Link validity has expired. Please restart the reset process';
+		$resp['status'] = 'link_expired';
+		return;
+	}
+	$sql = 'SELECT password_hash FROM users WHERE user_id="' . $tkn->user_id . ';"';
+	$rows = get_db_rows($sql);
+	
+	if(count($rows)==0){
+		$resp['message'] = 'Password has already been changed';
+		$resp['status'] = 'already_reset';		
+		return;
+	}
+	
+	
+}
+
+if(find_rq_by_type($rq_list, 'web_update_password', 'web_update_password'))
 
 if(!isset($_SERVER['PHP_AUTH_DIGEST']) ||
 	!($token = decode_token($_SERVER['PHP_AUTH_DIGEST']) )){

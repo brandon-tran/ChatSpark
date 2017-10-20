@@ -10,8 +10,10 @@ if(!$tkn){
 
 var_dump($tkn);
 $user_id = intval($tkn->user_id);
+
 switch($tkn->type){
 	case 'activate_account':
+		$sql = "UPDATE users SET verified=1 WHERE user_id=$user_id";
 		if(do_sql($sql))
 			echo "Your account is now active!";
 		else
@@ -19,12 +21,19 @@ switch($tkn->type){
 		break;
 		
 	case 'reset_password':
-		
+		$html = file_get_contents(PASSWORD_RESET_HTML);
+		if(!$html)
+			die(dLog("An error has occurred in action.php. Could not load page"));
+		$html = str_replace('@rq_endpoint@', RQ_ENDPOINT, $html);
+		echo $html;
+		break;
+	case 'send_new_password':
+		if()
 		break;
 	default:
 		die(dLog("Error! Please retry!");	
 }
-$sql = "UPDATE users SET verified=1 WHERE user_id=$user_id";
+
 echo "\nsql=$sql \n";
 
 
