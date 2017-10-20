@@ -3,7 +3,8 @@ include('utils.php');
 
 
 
-$rq_list = json_decode(file_get_contents("php://input"), false);
+$rq_list = sanitize_object(json_decode(file_get_contents("php://input"), false));
+
 
 $responses = array();
 $headers = array();
@@ -17,13 +18,6 @@ if(json_last_error() != JSON_ERROR_NONE){
 
 init();
 
-function find_rqs_by_type($rq_list, $type){
-	$rqs = array();
-	foreach($rq_list as $k => $rq)
-		if(isset($rq->type) && ($rq->type==$type))
-			$rqs[$k] = $rq;
-	return $rqs;
-}
 
 function invalid_status_response($resp, $rq){
 	global $response, $rsa_pub_key;
@@ -142,8 +136,27 @@ function create_new_account($rq, &$resp){
 	return send_confirmation_email($rq->data->email, $mysql_conn->insert_id, $resp);
 }
 
+function reset_password(&$rq, &$resp){
+	return send_email($email, $user_id, $resp, PASSWORD_RESET_TEMPLATE, function($message){
+		$tkn = array(
+			'user_id' => $user_id,		
+			'type' => 'reset_password',
+		);
+		return str_replace('@reset_link@', ACTION_ENDPOINT . '?' . encode_token($tkn), $message);
+	});
+}
 
-function send_confirmation_email($email, $user_id, &$resp){	
+function send_confirmation_email($email, $user_id, &$resp){
+	return send_email($email, $user_id, $resp, ACTIVATION_EMAIL_TEMPLATE, function($message){
+		$tkn = array(
+			'user_id' => $user_id,		
+			'type' => 'activate_account',
+		);
+		return str_replace('@activation_link@', ACTION_ENDPOINT . '?' . encode_token($tkn), $message);
+	});	
+}
+
+function send_email($email, $user_id, &$resp, $template_name, $message_callback){	
 	dLog("send_confirmation_email() cwd:" . getcwd());
 	$ip = $_SERVER['REMOTE_ADDR'];
 	$t = time() - 3600;
@@ -159,19 +172,15 @@ function send_confirmation_email($email, $user_id, &$resp){
 
 	$sql = "INSERT INTO email (email, user_id, ip) VALUES($email, $user_id, " . $_SERVER['SERVER_ADDR'] . " )";
 	
-	$message = file_get_contents(ACTIVATION_EMAIL_FILE);
+	$message = file_get_contents($template_name);
 	if(!$message){
 		dLog("Error retrieving file in send_confirmation_email()");
 		return NULL;		
 	}
+
+	$message = $message_callback($message, $user_id);
 	
 	
-	$tkn = array(
-		'user_id' => $user_id,		
-		'type' => 'activate_account',
-	);
-	
-	$message = str_replace('@activation_link@', ACTIVATION_ENDPOINT . '?' . encode_token($tkn), $message);
 	dLog("send_confirmation_email() message:\n $message");
 	
 	$email_headers = [ 'MIME-Version: 1.0', 'Content-type: text/html; charset=iso-8859-1', 'From: ChatSpark <' . ACTIVATION_EMAIL_ADDRESS . '>' ];
@@ -185,11 +194,13 @@ function send_confirmation_email($email, $user_id, &$resp){
 }
 
 function find_rq_by_type(&$rqs, $type, $callback, &$resp) {
-	$rqt = NULL;
+	$k0 = NULL;
+	dLog("rqs:", $rqs);
+	
 	foreach($rqs as $k => &$rq){
 		if(isset($rq->type) && ($rq->type==$type))
-			if($rqt===NULL)
-				$rqt = &$rq; // keep looping in case there's more than one, throw an error if that occurs
+			if($k0===NULL)
+				$k0 = $k; // keep looping in case there's more than one, throw an error if that occurs
 			else {
 				$resp['rqid'] = $rq->rqid;
 				$resp['status'] = 'multiple_items';
@@ -198,12 +209,13 @@ function find_rq_by_type(&$rqs, $type, $callback, &$resp) {
 				return NULL;
 			}
 	}
-	if($rqt === NULL)
+	if($k === NULL)
 		return FALSE;
 	
-	$resp['rqid'] = $rqt->rqid;
+	$resp['rqid'] = $rqs->$k->rqid;
 	
-	$callback($rq, $resp);
+	$callback($rqs->$k, $resp);
+	unset($rqs->$k);
 	return TRUE;
 }
 
@@ -216,6 +228,8 @@ if(!isset($_SERVER['PHP_AUTH_DIGEST']) ||
 		create_response($resp);
 	}
 	elseif(find_rq_by_type($rq_list, 'new_account', 'create_new_account', $resp))
+		create_response($resp);
+	elseif(find_rq_by_type($rq_list, 'reset_password', 'reset_password', $resp))
 		create_response($resp);
 }
 else
@@ -265,15 +279,35 @@ function get_file_details($lang = 'en'){
 	return $files;
 }
 
+
+
+function get_user($email_hash){
+	$email_hash_hash = crc32($email_hash);
+	$sql = "SELECT * FROM users WHERE email_hash_hash=\"" . $email_hash_hash . "\"";
+	$rows = get_db_rows($sql);
+	$c = count($rows);
+	if($c == 0)
+		return false;	
+	
+	elseif($c > 1){
+		$sql = "SELECT * FROM users WHERE email_hash=\"" . $email_hash . "\"";
+		$rows = get_db_rows($sql);
+		if(count($rows)>1)
+			die(dLog("db Error: email_hash duplicated"));
+	}
+	return $rows[0];
+}
+
 function login_user(&$rq, &$resp){ //$email_hash, $password_hash, &$status){
 	global $token;
-	$sql = "SELECT * FROM users WHERE email_hash=\"" . $rq->data->email_hash . "\"";
-	$rows = get_db_rows($sql);
-	if(count($rows)==0){
+	dLog("login_user() rq:", $rq);
+	$row = get_user($rq->data->email_hash);
+	if(!$row){
 		$resp['status'] = 'user_not_found';
-		return false;	
+		return false;
 	}
-	if($rows[0]->password_hash != $rq->data->password_hash){
+	
+	if($row->password_hash != $rq->data->password_hash){
 		$resp['status'] = 'incorrect_password';
 		return false;
 	}
@@ -282,9 +316,9 @@ function login_user(&$rq, &$resp){ //$email_hash, $password_hash, &$status){
 	
 	$t = time();
 	$token = array(
-		'user_id' => $rows[0]->user_id,
+		'user_id' => $row->user_id,
 		'created' => $t,
-		'issued_by' => $_SERVER[SERVER_ADDR],
+		'issued_by' => $_SERVER['SERVER_ADDR'],
 		'check_after' => $t + STEP_TIME_BEFORE_PASSWORD_UPDATE_CHECK, // the time after which it should be checked to see if there has been a password update
 	);
 	return true;

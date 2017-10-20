@@ -3,6 +3,16 @@ include('globals.php');
 
 include('jwt' . DIRECTORY_SEPARATOR . 'JWT.php');
 
+function sanitize_object($obj){
+	foreach($obj as $k => $val)
+		if(is_scalar($val))
+			$obj->$k = addslashes($val);
+		else
+			sanitize_object($obj->$k);
+	return $obj;
+}
+
+
 function init(){
 	init_mysql();
 }
@@ -60,9 +70,8 @@ function get_user_var($var_name, $default){
 }
 
 function dLog($msg, $arr = NULL){
-	global $log_file;
 	$msg = $arr != NULL ? $msg . var_export($arr, TRUE) : $msg;	
-	file_put_contents($log_file, $msg . "\n", FILE_APPEND);
+	file_put_contents(DLOG_FILE, $msg . "\n", FILE_APPEND);
 	return $msg;
 }
 
@@ -170,9 +179,10 @@ function create_stored_procedure($proc){
 	return true;
 }
 
-function decode_token($tkn){
+function decode_token($jwt){
 	global $rsa_pub_key;
-	return JWT::decode($tkn, $rsa_pub_key, array('RS256'));
+	$tkn = JWT::decode($jwt, $rsa_pub_key, array('RS256'));
+	return sanitize_object($tkn);
 }
 
 function encode_token($tkn){

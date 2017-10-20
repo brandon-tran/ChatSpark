@@ -12,6 +12,18 @@ rqId = 1;  // rqId=0 reserved for system messages
 errNoticeTimeout = 3000;
 commonSalt = [52, 114, 250, 27, 157, 4, 78, 96, 51, 65, 236, 143, 107, 225, 131, 247, 20, 136, 102, 37, 253, 125];
 
+if('auth' in localStorage){
+	try {
+		auth = JSON.parse(localStorage);
+	}
+	catch(e){
+		auth = {};
+		localStorage.removeItem('auth');	
+	}
+}
+else
+	auth = {};
+
 function initTestQuestions(){
 	var sampleStrings = [ "Context", "Work", "Social", "Date", "Topic", "Basketball &#x1F3C0;", "Cricket", "What day is it?", "Why 1 sdf sdiusdf zuhzsdf uzsd fiu iuoiuzoiub sd07h zs 8zsdf yb zshbdfsdf?", "Why 2?", "Why 3?"];
 	var sampleQuestions = {
@@ -45,7 +57,17 @@ catch(e){
 currentPath = qData.userQuestions;
 
 function login_callback(resp){
-	
+	switch(resp.status){
+		case 'logged_in':
+			document.body.setAttribute('data-logged-in', true);
+			break;
+		case 'user_not_found':
+			document.forms['login_page'].elements['email'].classList.add('invalid_input');
+			break;
+		case 'incorrect_password':
+			document.forms['login_page'].elements['password'].classList.add('invalid_input');
+			break;
+	}
 }
 
 function new_account_callback(resp){
@@ -393,12 +415,32 @@ function get(url, callbacks){
 	xhr.send();
 }
 
+function getAuth(xhr, url){
+	var authField = xhr.getResponseHeader("Authorization");
+	if(!authField)
+		return;
+	auth[getHostFromUrl(url)] = authField;
+	localStorage.auth = JSON.stringify(auth);
+}
+
+function getHostFromUrl(url){
+	var a = document.createElement ('a');
+	a.href = url;
+	return a.hostname;
+}
+
+function getCachedAuth(url, xhr){
+	var host = getHostFromUrl(url);
+	if(host in auth)
+		xhr.setRequestHeader(auth[host]);
+}
 
 
 function post(url, data, callbacks){
 	var xhr = new XMLHttpRequest();
 	xhr.open("POST", url, true);
 	xhr.setRequestHeader("Content-type", "application/json");
+	getCachedAuth(url, xhr);
 	xhr.onreadystatechange = function () {
 		if (xhr.readyState === 4 && xhr.status === 200) {
 			try {
@@ -410,6 +452,7 @@ function post(url, data, callbacks){
 			catch(e){
 				sLog("Error parsing JSON response. Raw: " + xhr.responseText);
 			}
+			getAuth(xhr);
 			callbacks.success(data);
 		}
 	};
@@ -661,8 +704,9 @@ function ldPage(ev){
 function clearUserData(){
     for(let c of document.cookie.split(";"))
 		document.cookie = c.split('=')[0] + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
-	if('user' in localStorage)
-		delete localStorage.user;
+	if('auth' in localStorage)
+		delete localStorage.auth;
+	document.body.removeAttribute('data-logged-in');
 }
 
 </script>
@@ -692,7 +736,7 @@ Type a message...<br>
 
 <div class='screen config_screen' id='login_page'>
 <form data-formtype="login" data-callback='login_callback' name='login_page'>
-<input data-onsubmit='hashDelOriginal' name='login_name' type='email' required placeholder="example@me.com"></input><br/>
+<input data-onsubmit='hashDelOriginal' name='email' type='email' required placeholder="example@me.com"></input><br/>
 <input data-onsubmit='hashDelOriginal' name='password' type='password' required placeholder="Password"></input><br/><br/>
 <div class='centered_buttons'>
 <div class='button submit default_button'>Login</div>
@@ -734,9 +778,9 @@ Type a message...<br>
 </div>
 
 <div class='config_screen screen' id='reset_password'>
-<form data-formtype="reset_password" name='reset_password'>
+<form data-formtype="reset_password" name='reset_password' data-callback='reset_password'>
 Please enter your email address<br/>
-<input name='email' type='email' required placeholder="example@me.com"></input>
+<input data-onsubmit='hash' name='email' type='email' required placeholder="example@me.com"></input>
 <div class='submit submit_btn button default_button'>Submit</div>
 </form>
 </div>
