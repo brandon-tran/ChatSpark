@@ -668,18 +668,29 @@ function submitData(){
 	} );
 }
 
-function cmpLinkedPasswordInputs(el, le){
+function cmpLinkedPasswordInputs(el, group){
 	el.classList.add('changed');
+	var els = linkedPasswordInputs[group];
 	if(countElsOfClass(els, 'changed') > 1){
-		for(el of le)
-			el.classList.add('unmatched');
-			
+		var matched = true;
+		for(var i = 1; i < els.length; i++)
+			if(els[i]!=els[0]){
+				matched = false;
+				break;
+			}
+		if(matched)
+			for(var i of els)
+				i.classList.remove('unmatched');
+		else
+			for(var i of els)
+				i.classList.add('unmatched');
 	}
+	
 
 	function countElsOfClass(els, cls){
 		var n = 0;
 		for(let el of els)
-			if(el.classList.containes(cls))
+			if(el.classList.contains(cls))
 				n++;
 		return n;
 	}
@@ -722,13 +733,13 @@ function initListeners(){
 }
 
 function initLinkedPasswordInputs(){
-	var linkedPasswordInputs = {};
+	linkedPasswordInputs = {};
 	for(let i of document.querySelectorAll("input[data-linkedpasswordinput]")){
 		var j = i.getAttribute('data-linkedpasswordinput');
 		if(!(j in linkedPasswordInputs))
 			linkedPasswordInputs[j] = [];
-		linkedPasswordInputs.push(i);
-		i.setAttribute('data-linkedpasswordinput', linkedPasswordInputs[j]);
+		linkedPasswordInputs[j].push(i);
+		//i.setAttribute('data-linkedpasswordinput', linkedPasswordInputs[j]);
 	}
 }
 
@@ -852,6 +863,7 @@ Settings here<br/>
 <input data-onsubmit='hashDelOriginal' name='password_old' type='password' required placeholder="Enter old password"></input>
 <input data-linkedpasswordinput='1' data-onsubmit='hashDelOriginal' name='password_new' type='password' required placeholder="Enter new password"></input>
 <input data-linkedpasswordinput='1' data-onsubmit='delInput' name='password_new2' type='password' required placeholder="Re-enter new password"></input>
+<span></span>
 <div class='submit submit_btn button default_button'>Submit</div>
 </form>
 </div>
