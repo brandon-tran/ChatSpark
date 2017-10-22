@@ -17,22 +17,25 @@ function get_user_by_email_hash($email_hash){
 	return $rows[0];
 }
 
-function login_user(&$rq, &$resp){ //$email_hash, $password_hash, &$status){
+function login_user(&$rq, &$resp){
 	global $token;
 	dLog("login_user() rq:", $rq);
 	$row = get_user_by_email_hash($rq->data->email_hash);
 	if(!$row){
 		$resp['status'] = 'user_not_found';
-		return false;
+		$resp['fields'] = array('email');
+		return $resp['success'] = FALSE;
 	}
+	
+	dLog("login_user() rq 2:", $rq);
 	
 	if(!password_verify($rq->data->password_hash, $row->password_hash)){
 		$resp['status'] = 'incorrect_password';
-		return false;
+		$resp['fields'] = array('password');
+		return $resp['success'] = FALSE;
 	}
 	
-	$resp['status'] = 'logged_in';
-	
+	dLog("login_user() rq 3:", $rq);
 	$t = time();
 	$token = array(
 		'user_id' => $row->user_id,
@@ -40,9 +43,12 @@ function login_user(&$rq, &$resp){ //$email_hash, $password_hash, &$status){
 		'issued_by' => $_SERVER['SERVER_ADDR'],
 		'check_after' => $t + STEP_TIME_BEFORE_PASSWORD_UPDATE_CHECK, // the time after which it should be checked to see if there has been a password update
 	);
-	return true;
-}
 
+	$resp['status'] = 'logged_in';
+	dLog("login_user() resp 4:", $resp);
+	
+	return $resp['success'] = TRUE;
+}
 
 function mk_web_hash($str){
 	global $server_salt;
@@ -63,33 +69,40 @@ function verify_web_password_hash($user_id, $hash){
 
 function web_update_password(&$rq, &$resp){
 	global $server_salt;
-	$tkn = decode_token($rq->jwt);
+	$tkn = decode_token($rq->data->jwt);
 	
 	if(!$tkn){
 		$resp['message'] = 'An error has occurred. Please restart the reset process';
 		$resp['status'] = 'token_error';
-		return;
+		return $resp['success'] = FALSE;
 	}
 	if($tkn->expiry < time()){
 		$resp['message'] = 'Link validity has expired. Please restart the reset process';
 		$resp['status'] = 'link_expired';
-		return;
+		return $resp['success'] = FALSE;
 	}
 
 	if(!verify_web_password_hash($tkn->user_id, $tkn->password_hash)){
 		$resp['message'] = 'Password has already been changed';
 		$resp['status'] = 'already_reset';		
-		return;
+		return $resp['success'] = FALSE;
 	}
 	
 	$resp['message'] = 'Password successfully changed';
 	$resp['status'] = 'password_changed';
-	return update_password($tkn->user_id, $rq->data->password_hash);	
+	
+	return $resp['success'] = update_password($tkn->user_id, $rq->data->password_hash);	
 }
 
 function update_password($user_id, $password){
-	$sql = 'UPDATE users SET password_hash="' . hash_password($password, PASSWORD_BCRYPT) . '";';
+	$sql = 'UPDATE users SET password_hash="' . password_hash($password, PASSWORD_BCRYPT) . '";';
 	return do_sql($sql);
+}
+
+function parse_subject_from_message_template($msg){
+	$i = strpos($msg, 'subject:"', 0) + 9;
+	$j = strpos($msg, '"', $i);
+	return substr($msg, $i, $j - $i + 1);	
 }
 
 function send_email($email, $user_id, &$resp, $template_name, $message_callback){	
@@ -103,15 +116,18 @@ function send_email($email, $user_id, &$resp, $template_name, $message_callback)
 	
 	if($rows[0]->count > MAX_EMAILS_PER_HOUR){
 		$resp['status'] = 'email_limit_exceeded';
-		return false;		
+		return $resp['success'] = FALSE;	
 	}
 
-	$sql = "INSERT INTO email (email, user_id, ip) VALUES($email, $user_id, " . $_SERVER['SERVER_ADDR'] . " )";
-	
+	$sql = "INSERT INTO email (email_address, user_id, ip) VALUES(\"$email\", $user_id, \"" . $_SERVER['SERVER_ADDR'] . "\" )";
+	if(!do_sql($sql)){
+		dLog("Error writing to table email.");
+		return $resp['success'] = FALSE;
+	}
 	$message = file_get_contents($template_name);
 	if(!$message){
 		dLog("Error retrieving file in send_confirmation_email()");
-		return NULL;		
+		return $resp['success'] = FALSE;	
 	}
 
 	$message = $message_callback($message, $user_id);
@@ -120,13 +136,13 @@ function send_email($email, $user_id, &$resp, $template_name, $message_callback)
 	dLog("send_confirmation_email() message:\n $message");
 	
 	$email_headers = [ 'MIME-Version: 1.0', 'Content-type: text/html; charset=iso-8859-1', 'From: ChatSpark <' . ACTIVATION_EMAIL_ADDRESS . '>' ];
-	
-	if(mail( $email, "Account activation for your new chatSpark account", $message, implode("\r\n", $email_headers))){
+	$subject = parse_subject_from_message_template($message);
+	if(mail( $email, $subject, $message, implode("\r\n", $email_headers))){
 		$resp['status'] = 'confirmation_email_sent';
-		return TRUE;
+		return $resp['success'] = TRUE;
 	}	
 	$resp['status'] = 'email_send_error';
-	return NULL;
+	return $resp['success'] = FALSE;
 }
 
 
@@ -169,7 +185,7 @@ function create_new_account($rq, &$resp){
 		
 	$wr_fields['email_hash_hash'] = CRC32($rq->data->email_hash);
 	
-	$wr_fields['password_hash'] = password_verify($wr_fields['password_hash'], PASSWORD_BCRYPT);
+	$wr_fields['password_hash'] = password_hash($wr_fields['password_hash'], PASSWORD_BCRYPT);
 	
 	$wr_fields['birthday'] = mktime(0,0,0, $rq->data->month + 1, $rq->data->day, $rq->data->year);
 	dLog("wr_fields:", $wr_fields);
@@ -194,8 +210,41 @@ function create_new_account($rq, &$resp){
 	return send_confirmation_email($rq->data->email, $mysql_conn->insert_id, $resp);
 }
 
+function app_update_password(&$rq, &$resp){
+	global $token;
+	if($rq->data->password_hash==$rq->data->password_new_hash){
+		$resp['status'] = 'app_update_same_password';
+		$resp['fields'] = array( 'password_new', 'password_new2' );
+		return $resp['success'] = FALSE;
+	}
+	
+	$sql = 'SELECT password_hash FROM users WHERE user_id=' . $token->user_id;
+	$rows = get_db_rows($sql);
+	if(count($rows)!=1)
+		die(dLog('Error: Could not find user with user_id=' . $token->user_id . ' in database users'));
+	dLog('app_update_password() rq:', $rq);
+	
+	if(!password_verify($rq->data->password_hash, $rows[0]->password_hash)){
+		$resp['status'] = 'app_update_same_password';
+		$resp['fields'] = array( 'password_new', 'password_new2' );
+		return $resp['success'] = FALSE;
+	}	
+
+	$b = update_password($token->user_id, $rq->data->password_new_hash);
+	$resp['status'] = 'app_update_password_updated';
+	return $resp['success'] = TRUE;
+}
+
 function reset_password(&$rq, &$resp){
-	return send_email($email, $user_id, $resp, PASSWORD_RESET_TEMPLATE, function($message){
+	$row = get_user_by_email_hash($rq->data->email_hash);
+	if(!$row){
+		$resp['status'] = 'reset_password_invalid_email';
+		$resp['fields'] = array('email');
+		$resp['success'] = FALSE;
+		return FALSE;		
+	}
+	
+	return send_email($rq->data->email, $row->user_id, $resp, PASSWORD_RESET_TEMPLATE, function($message, $user_id){
 		$sql = "SELECT password_hash FROM users WHERE user_id=$user_id";
 		$ph = get_db_rows($sql)[0]->password_hash;
 		$tkn = array(
@@ -204,17 +253,20 @@ function reset_password(&$rq, &$resp){
 			'expiry' => time() + 3600,
 			'password_hash' => mk_web_hash($user_id),
 		);
-		return str_replace('@reset_link@', rq_endpoint . '?' . encode_token($tkn), $message);
+		$action_link = ACTION_ENDPOINT . '?' . encode_token($tkn);
+		dLog("action_link: $action_link");
+		return str_replace('@reset_link@', $action_link, $message);
 	});
 }
 
 function send_confirmation_email($email, $user_id, &$resp){
-	return send_email($email, $user_id, $resp, ACTIVATION_EMAIL_TEMPLATE, function($message){
+	return send_email($email, $user_id, $resp, ACTIVATION_EMAIL_TEMPLATE, function($message, $user_id){
 		$tkn = array(
 			'user_id' => $user_id,		
 			'type' => 'activate_account',
 		);
-		return str_replace('@activation_link@', rq_endpoint . '?' . encode_token($tkn), $message);
+		$action_link = ACTION_ENDPOINT . '?' . encode_token($tkn);
+		return str_replace('@activation_link@', $action_link, $message);
 	});	
 }
 

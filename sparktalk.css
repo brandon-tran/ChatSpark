@@ -206,13 +206,34 @@ fieldset, input[type='text'], input[type='email'], input[type='password']{
 }
 
 
-#new_account input.l2 {
-	width: 49.6%;
-	float: left;
+@keyframes expanding_input {
+	from {
+		height: 0;
+		padding: 0;
+		margin: 0;
+		border-width: 0;
+	}
+	to {
+		height: 2em;
+		padding: 0.4em;
+		margin: 0.2em 0 0.2em 0;
+		border-width: 1px;
+	}
 }
 
-#new_account input.l2 + input.l2 {
-	float: right!important;
+@keyframes shrinking_input {
+	from {
+		height: 2em;
+		padding: 0.4em;
+		margin: 0.2em 0 0.2em 0;
+		border-width: 1px;
+	}
+	to {
+		height: 0;
+		padding: 0;
+		margin: 0;
+		border-width: 0;
+	}
 }
 
 header {
@@ -244,11 +265,11 @@ header > div {
 }
 
 
-body.settings_page #settings_page, body.login_page:not([data-logged-in]) #login_page, body.new_account:not([data-logged-in]) #new_account, body.reset_password:not([data-logged-in]) #reset_password, body.update_password:not([data-logged-in]) #update_password {
+body.settings_page #settings_page, body.login_page:not([data-logged-in]) #login_page, body.new_account:not([data-logged-in]) #new_account, body.reset_password:not([data-logged-in]) #reset_password {
 	display: block;
 }
 
-body[data-logged-in]:not(.settings_page) #textwrapper {
+body.text_wrapper[data-logged-in] #text_wrapper, body.app_update_password[data-logged-in] #app_update_password  {
 	display: block;
 }
 
@@ -301,7 +322,7 @@ body[data-logged-in]:not(.settings_page) #nav {
 }
 
 
-body:not([data-logged-in]) #logout {
+body:not([data-logged-in]) #logout, body:not([data-logged-in]) #app_update_password_link {
 	display: none;
 }
 
@@ -326,7 +347,7 @@ body:not([data-logged-in]) #logout {
 	padding: 0.5em 1em 0.5em 0.5em; 
 }
 
-#textwrapper {
+#text_wrapper {
 	position: relative;
 	text-align: center;
 }
@@ -335,7 +356,7 @@ body:not([data-logged-in]) #logout {
 	padding: 2em 1.5em 0 1.5em;
 }
 
-#textwrapper .clear_float {
+#text_wrapper .clear_float {
 	padding-top: 5em;
 }
 
@@ -358,22 +379,109 @@ footer div {
 }
 
 
-
 #birthday p {
 	font-weight: bold;
 	margin-bottom: 0.3em;
 }
+
+
+
+.invalid_input:focus {
+	background-color: #FFFAFA;
+}
+
+input ~ input.unmatched, .invalid_input {
+	border-color: red;
+	background-color: #FFF5F5;
+}
+
+input.new_password.unmatched ~ input.new_password.changed.unmatched:focus ~ span::after {
+	content:"Passwords are different";
+	color: red;
+	opacity: 1;
+	transition: opacity 0.5s;
+	visibility: visible;
+}
+
+input.tooshort.new_password:focus ~ input.new_password ~ span::after {
+	content:"Too short";
+	color: red;
+	opacity: 1;
+	transition: opacity 0.5s;
+	visibility: visible;
+}
+
+input.new_password.changed:not(.tooshort) ~ input.new_password {
+	animation: expanding_input 0.5s 1;
+	height: 2em;
+}
+
+input.new_password.changed:not(.tooshort) ~ input.new_password:not(.changed) ~ span::after {
+	content:"Please enter new password again";
+	color: green;
+	opacity: 1;
+	transition: opacity 0.5s;
+	visibility: visible;
+}
+
+input.new_password.changed:not(.tooshort) {
+	background-color: #F0FFF0;
+	border-color: green;	
+}
+
 
 .submit_btn {
 	padding: 0.5em;
 	width: 6em;
 	border-radius: 0.3em;
 	margin: 0.5em 0 0.5em 0;
+	transition: opacity 0.5s;
+	visibility: visible;
+	opacity: 1;
 }
 
-input.unmatched, .invalid_input {
-	border: 1px solid red !important;
-	background-color: #FFF5F5;
+form > fieldset:not(.changed) ~ .submit_btn, form > input:not(.changed) ~ .submit_btn, form > input.unmatched ~ .submit_btn, form > input.tooshort ~ .submit_btn, form > *.invalid_input ~ .submit_btn {
+	visibility: hidden!important;
+	opacity: 0!important;
+	transition: opacity 0.5s;
 }
+
+
+/* input.new_password.changed:not(.unmatched):not(.tooshort) ~ .submit_btn {
+	visibility: visible;
+	opacity: 1;	
+	transition: opacity 0.5s;
+} */
+
+
+input.new_password ~ span::after {
+	font-size:0.7em;
+	text-align: left;
+	position: absolute;
+	top:0; 
+	left: 0;
+	display: block;
+	width:20em;
+	height: 1em;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 2.5s;
+}
+
+input.new_password.tooshort:not(.unmatched) ~ input.new_password, input.new_password:not(.changed) ~ input.new_password {
+	height: 0;
+	padding: 0;
+	margin: 0;
+	border-width: 0;
+	animation: shrinking_input 0.5s 1;
+}
+
+input[data-linkedpasswordinput] + span {
+	margin-bottom: 2.5em;
+	display: block;
+	position: relative;
+}
+
+
 
 

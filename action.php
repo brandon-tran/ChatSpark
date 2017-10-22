@@ -7,8 +7,8 @@ if(!$tkn){
 	echo "Error: Incorrect activation url. Please restart your account creation.";
 	return;
 }
+dLog("action.php token:", $tkn);
 
-var_dump($tkn);
 $user_id = intval($tkn->user_id);
 
 switch($tkn->type){
@@ -25,17 +25,17 @@ switch($tkn->type){
 		if(!$html)
 			die(dLog("An error has occurred in action.php. Could not load page"));
 		$html = str_replace('@rq_endpoint@', RQ_ENDPOINT, $html);
+		$html = str_replace('@commonSalt@', json_encode($commonSalt), $html);
 		echo $html;
 		break;
+		
 	case 'web_update_password':
-		if()
+		//if()
 		break;
+	
 	default:
-		die(dLog("Error! Please retry!");	
+		die(dLog("Error! Please retry!"));	
 }
-
-echo "\nsql=$sql \n";
-
 
 
 end_all();

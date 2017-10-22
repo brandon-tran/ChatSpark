@@ -2,13 +2,17 @@
 include('utils.php');
 include('account.php');
 
-$rq_list = sanitize_object(json_decode(file_get_contents("php://input"), false));
-
-
 $responses = array();
-$headers = array();
+$response_headers = array();
+$rq_headers = getallheaders();
 $verified = false;
 $token = array();
+
+$rq_list = json_decode(file_get_contents("php://input"), false);
+sanitize_object($rq_list);
+
+dLog('headers:', getallheaders());
+dLog('rq_list:', $rq_list);
 
 
 if(json_last_error() != JSON_ERROR_NONE){
@@ -16,6 +20,90 @@ if(json_last_error() != JSON_ERROR_NONE){
 }
 
 init();
+
+
+if(find_rq_by_type($rq_list, 'web_update_password', 'web_update_password', $resp, $rq)){
+	add_to_response($resp);
+	write_responses();
+	end_all();
+	return;
+}
+
+dLog('server_vars', $_SERVER);
+dLog('strlen auth:' . strlen($rq_headers['Authorization']));
+
+$rq_auth = substr($rq_headers['Authorization'], 7);
+dLog("rq_auth: $rq_auth");
+
+if(find_rq_by_type($rq_list, 'login', 'login_user', $resp, $rq)){
+	dLog('main() 1');
+	add_to_response($resp);
+	if($resp['status'] == 'logged_in'){
+		dLog("Successfully verified user. resp:", $resp);
+
+		$verified = TRUE;
+	}
+	else {
+		$verified = FALSE;
+		$token = NULL;
+		exit_rq(0);
+	}
+}
+elseif(find_rq_by_type($rq_list, 'new_account', 'create_new_account', $resp, $rq) ||
+	find_rq_by_type($rq_list, 'reset_password', 'reset_password', $resp, $rq))
+{
+	add_to_response($resp);
+	exit_rq(0);		
+}
+
+if($verified)   // keep this flow very clean and simple 
+	;
+elseif(!isset($rq_auth))
+	exit_rq($exit_code);
+elseif(!($token = decode_token($rq_auth))){
+	exit_rq(1);
+}
+else
+	$verified = TRUE;
+
+dLog('main() 3');
+
+
+if(find_rq_by_type($rq_list, 'app_update_password', 'app_update_password', $resp, $rq)){
+	add_to_response($resp);
+	$token = NULL;
+	exit_rq(3);
+}
+
+foreach($rq_list as $rq){
+	switch($rq->type){
+		case 'login':
+			die(dLog("This should never trigger"));
+			break;
+		case 'files':
+			add_to_response(get_file_details(), $rq->rqid);
+			break;
+	}
+}
+
+function add_to_response($resp){
+	global $responses;
+	array_push($responses, $resp);
+}
+
+
+write_responses(); // duplicated functionality from above, but it's much safer to have clean code flow for authentication stuff
+
+end_all();
+exit(0);
+
+function get_file_details($lang = 'en'){
+	$rows = get_db_rows("SELECT DISTINCT(file) f FROM files WHERE lang='$lang' JOIN ");
+	$files = array();
+	foreach($rows as $row)
+		array_push($files, $row['file']);
+	return $files;
+}
 
 
 function invalid_status_response($resp, $rq){
@@ -32,9 +120,12 @@ function invalid_status_response($resp, $rq){
 }
 
 function write_responses(){
-	global $responses, $headers;
-	foreach($headers as $k => $field)
+	global $responses, $response_headers, $token;
+	if($token)
+		$response_headers['Authorization'] = "Bearer " . encode_token($token); // todo this should be further down
+	foreach($response_headers as $k => $field)
 		header("$k:$field");
+	dLog('responses:', $responses);
 	echo json_encode(array_values($responses));
 }
 
@@ -58,100 +149,40 @@ function chk_fields_present($field_names, $arr, &$res){
 		$res['excess'] = $excess;
 }
 
-
-function find_rq_by_type(&$rqs, $type, $callback, &$resp) {
+function find_rq_by_type(&$rqs, $type, $callback, &$resp, &$req) {
 	$k0 = NULL;
-	dLog("rqs:", $rqs);
-	
+	//$resp = array();
 	foreach($rqs as $k => &$rq){
-		if(isset($rq->type) && ($rq->type==$type))
+		dLog("rq->type: " . $rq->type);
+		if(isset($rq->type) && ($rq->type==$type)){
+			dLog("type match");
 			if($k0===NULL)
 				$k0 = $k; // keep looping in case there's more than one, throw an error if that occurs
 			else {
+				dLog("Error: Multiple matching requests found");
+				$req = $rq;
 				$resp['rqid'] = $rq->rqid;
 				$resp['status'] = 'multiple_items';
-				$resp['success'] = FALSE;
-				dLog("Error: Multiple matching requests found");
-				return NULL;
+				return $resp['success'] = FALSE;
 			}
+		}
 	}
+
 	if($k0 === NULL)
-		return FALSE;
-	
-	$resp['rqid'] = $rqs->$k0->rqid;
-	
-	$callback($rqs->$k0, $resp);
-	unset($rqs->$k0);
+		return $resp['success'] = FALSE;
+	dLog('find_rq_by_type() rqs:', $rqs);
+	$req = $rq;
+	$resp['rqid'] = $rqs[$k0]->rqid;
+	$resp['type'] = $rqs[$k0]->type;
+	$callback($rqs[$k0], $resp);
+	unset($rqs[$k0]);
 	return TRUE;
 }
 
-
-if(find_rq_by_type($rq_list, 'web_update_password', 'web_update_password', $resp)){
-	add_to_response($resp);
+function exit_rq($exit_code){
 	write_responses();
 	end_all();
+	exit($exit_code);
 }
-
-if(!isset($_SERVER['PHP_AUTH_DIGEST']) ||
-	!($token = decode_token($_SERVER['PHP_AUTH_DIGEST']) )){
-	$resp = array();
-	if(find_rq_by_type($rq_list, 'login', 'login_user', $resp)){
-		if($resp['status'] == 'logged_in')
-			$verified = TRUE;
-		create_response($resp);
-	}
-	elseif(find_rq_by_type($rq_list, 'new_account', 'create_new_account', $resp))
-		create_response($resp);
-	elseif(find_rq_by_type($rq_list, 'reset_password', 'reset_password', $resp))
-		create_response($resp);
-}
-else
-	$verified = TRUE;
-
-if(!$verified){
-	write_responses();
-	end_all();
-	exit(1);
-}
-
-
-foreach($rq_list as $rq){
-	switch($rq->type){
-		case 'login':
-			die(dLog("This should never trigger"));
-			break;
-		case 'files':
-			add_to_response(get_file_details(), $rq->rqid);
-			break;
-		
-	}
-}
-
-function add_to_response($resp){
-	global $response;
-	array_push($response, 
-		array(
-			'rqid' => $resp['rqid'],
-			'data' => $resp	
-		)
-	);
-}
-
-
-$headers['Authorization'] = "Bearer " . encode_token($token); // todo this should be further down
-write_responses(); // duplicated functionality from above, but it's much safer to have clean code flow for authentication stuff
-
-end_all();
-exit(0);
-
-function get_file_details($lang = 'en'){
-	$rows = get_db_rows("SELECT DISTINCT(file) f FROM files WHERE lang='$lang' JOIN ");
-	$files = array();
-	foreach($rows as $row)
-		array_push($files, $row['file']);
-	return $files;
-}
-
-
 
 ?>

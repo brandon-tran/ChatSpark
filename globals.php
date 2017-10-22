@@ -5,19 +5,20 @@ if($debug){
 	define('FILE_DIR', '.'); // TODO change this
 	define('MYSQL_SERVER', 'localhost');
 	define('DLOG_FILE', "F:\\Hosting\\Logs\\sparktalk.log");
+	define('ACTIVATION_EMAIL_ADDRESS', 'rapid1@amnet.net.au');
 	file_put_contents(DLOG_FILE, "");
 }
 else {
 	define('FILE_DIR', '.'); // TODO change this
 	define('DLOG_FILE', "sparktalk.log"); //todo put this somewhere safer
 	define('MYSQL_SERVER', 'localhost');
-
+	define('ACTIVATION_EMAIL_ADDRESS', 'activation@chatspark.xyz');
 }
 
 define('MYSQL_USERNAME', 'chatspark_user');
 define('MYSQL_PASSWORD', 'NMdWMg43ysLfRvYk');
 define('MYSQL_DB', 'chatspark');
-define('ACTIVATION_EMAIL_ADDRESS', 'activation@chatspark.xyz');
+
 
 $mysql_conn = NULL;
 
@@ -26,15 +27,15 @@ $dropbox_secret = "evrzwbig18c0r3t";
 $dropbox_token = "3Y9RfWQXvtAAAAAAAAAACNjjHLjVjP4jpaBZ67mV2RwXRuArIBtWT_xDE07fzSr8";
 $genders = array('male', 'female', 'other');
 
-define('SERVER_ADDRESS', '127.0.0.1/sparktalk');
-define('rq_endpoint', SERVER_ADDRESS . '/action.php');
+define('SERVER_ADDRESS', 'http://127.0.0.1/sparktalk');
+define('ACTION_ENDPOINT', SERVER_ADDRESS . '/action.php');
 define('RQ_ENDPOINT', SERVER_ADDRESS . '/rq.php');
 
 define('STEP_TIME_BEFORE_PASSWORD_UPDATE_CHECK', 3600);
 define('ER_DUP_ENTRY', 1062); // from mysqld_error.h
 
 define('ACTIVATION_EMAIL_TEMPLATE', FILE_DIR . DIRECTORY_SEPARATOR . 'activation_email.html');
-define('PASSWORD_RESET_TEMPLATE', FILE_DIR . DIRECTORY_SEPARATOR . 'email_password_reset.html');
+define('PASSWORD_RESET_TEMPLATE', FILE_DIR . DIRECTORY_SEPARATOR . 'password_reset_email.html');
 define('PASSWORD_RESET_HTML', FILE_DIR . DIRECTORY_SEPARATOR . 'password_reset.html');
 
 define('MAX_EMAILS_PER_HOUR', 5);

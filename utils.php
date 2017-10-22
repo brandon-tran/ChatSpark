@@ -9,12 +9,14 @@ function maintenance(){
 	do_sql($sql);	
 }
 
-function sanitize_object($obj){
-	foreach($obj as $k => $val)
+function sanitize_object(&$obj){
+	dLog("sanitize_object() obj:", $obj);
+	foreach($obj as $k => &$val)
 		if(is_scalar($val))
-			$obj->$k = addslashes($val);
-		else
-			sanitize_object($obj->$k);
+			$val = addslashes($val);
+		else 
+			sanitize_object($val);
+			
 	return $obj;
 }
 
@@ -187,7 +189,14 @@ function create_stored_procedure($proc){
 
 function decode_token($jwt){
 	global $rsa_pub_key;
-	$tkn = JWT::decode($jwt, $rsa_pub_key, array('RS256'));
+	try {
+		$tkn = JWT::decode($jwt, $rsa_pub_key, array('RS256'));
+	}
+	catch(Exception $e){
+		dLog('decode_token() Invalid token: ' . "$jwt\n Error message: " . $e->getMessage());
+		return FALSE;
+	}
+	dLog("decode_token() tkn:", $tkn);
 	return sanitize_object($tkn);
 }
 

@@ -46,10 +46,22 @@ catch(e){
 
 currentPath = qData.userQuestions;
 
+function update_form_callback(resp, frm){
+	if(!('fields' in resp))
+		return false;
+	for(var inpName of resp.fields)
+		frm.elements[inpName].classList.add('invalid_input');
+	if('message' in resp)
+		frm.getElementsByClassName('status_message')[0].innerHTML = resp.message;
+	return true;
+}
+
 function login_callback(resp){
+	update_form_callback(resp, this);
 	switch(resp.status){
 		case 'logged_in':
 			document.body.setAttribute('data-logged-in', true);
+			ldPage('text_wrapper');
 			break;
 		case 'user_not_found':
 			document.forms['login_page'].elements['email'].classList.add('invalid_input');
@@ -60,8 +72,35 @@ function login_callback(resp){
 	}
 }
 
+function app_update_password_callback(resp){
+	update_form_callback(resp, this);
+	switch(resp['status']){
+		case 'app_update_password_updated':
+			document.body.classList.add('app_update_password_updated');
+			setTimeout(logout, 1000);
+			ldPage('login_page');
+			break;
+		case 'app_update_incorrect_password':
+			document.body.classList.add('app_update_incorrect_password');
+			break;
+	}
+}
+
 function new_account_callback(resp){
-	
+	update_form_callback(resp, this);
+	if('fields' in resp)
+		;
+	this.classList.add(resp.status);
+	setTimeout(function(){
+		ldPage('login_page');
+	}, 1000);
+}
+
+function reset_password_callback(resp){
+	if(resp.success){
+		
+	}
+
 }
 
 function getFirstArrKey(arr){
@@ -342,8 +381,9 @@ window.onload  = function(){ //test code
 	initLinkedPasswordInputs();
 	if('auth' in localStorage){
 		try {
-			auth = JSON.parse(localStorage);
+			auth = JSON.parse(localStorage.auth);
 			document.body.setAttribute('data-logged-in', true);
+			ldPage('text_wrapper');
 		}
 		catch(e){
 			auth = {};
@@ -359,7 +399,7 @@ window.onload  = function(){ //test code
 
 
 function dispatchRequests(rqs){
-	var rqsM = {};
+	var rqsM = [];
 	var d;
 	for(let rq of rqs){
 		if('data' in rq){
@@ -368,11 +408,13 @@ function dispatchRequests(rqs){
 		}
 		else
 			d = {type: rq.type, id: rqId};
-		rqsM[rqId] = d;
+		rqsM.push(d);
 		pendingAJAXCallbacks[rqId] = rq.callback;
 		delete rq.callback;
 		rqId++;
 	}
+	
+	post(rqEndpoint, rqsM, { success: callbackAll });
 	
 	function callbackAll(responses){
 		var deferred = [];
@@ -392,10 +434,9 @@ function dispatchRequests(rqs){
 		for(var rqid in pendingAJAXCallbacks){
 			sLog("Error: No server response/deferral for response.rqid: " + rqid + ", deleting.");
 			if(deferred.indexOf(rqid)<0)
-				delete pendingAJAXCallbacks[response.rqid];
+				delete pendingAJAXCallbacks[rqid];
 		}
 	}
-	post(rqEndpoint, rqsM, { success: callbackAll });
 }
 
 function sLog(msg){
@@ -426,12 +467,15 @@ function get(url, callbacks){
 	xhr.send();
 }
 
-function getAuth(xhr, url){
+function storeAuth(xhr, url){
 	var authField = xhr.getResponseHeader("Authorization");
+	var domain = getHostFromUrl(url);
 	if(!authField)
-		return;
-	auth[getHostFromUrl(url)] = authField;
-	localStorage.auth = JSON.stringify(auth);
+		logout();
+	else {
+		auth[getHostFromUrl(url)] = authField;
+		localStorage.auth = JSON.stringify(auth);
+	}
 }
 
 function getHostFromUrl(url){
@@ -443,7 +487,8 @@ function getHostFromUrl(url){
 function getCachedAuth(url, xhr){
 	var host = getHostFromUrl(url);
 	if(host in auth)
-		xhr.setRequestHeader(auth[host]);
+		return xhr.setRequestHeader('Authorization', auth[host]);
+	return false;
 }
 
 
@@ -451,7 +496,8 @@ function post(url, data, callbacks){
 	var xhr = new XMLHttpRequest();
 	xhr.open("POST", url, true);
 	xhr.setRequestHeader("Content-type", "application/json");
-	getCachedAuth(url, xhr);
+	if(!getCachedAuth(url, xhr))
+		xhr.setRequestHeader('Authorization', '')
 	xhr.onreadystatechange = function () {
 		if (xhr.readyState === 4 && xhr.status === 200) {
 			try {
@@ -463,7 +509,7 @@ function post(url, data, callbacks){
 			catch(e){
 				sLog("Error parsing JSON response. Raw: " + xhr.responseText);
 			}
-			getAuth(xhr);
+			storeAuth(xhr);
 			callbacks.success(data);
 		}
 	};
@@ -556,6 +602,7 @@ function getLocale(){
 	return 'languages' in navigator ? navigator.languages[0] : navigator.language;
 }
 
+
 function getFormEl(btn){
 	while(btn.tagName != 'FORM')
 		btn = btn.parentNode;
@@ -566,7 +613,7 @@ function getFormData(frm){
 
 	var promises = [];
 	
-	var data = {}, valid = true, invalidNames = {};
+	var data = {}, valid = true, invalidNames = {}, onsbs = {};
 
 	for(let inp of document.forms[frm.name].elements){
 		if(!('name' in inp))
@@ -584,7 +631,7 @@ function getFormData(frm){
 		data[inp.name] = inp.value;
 		var onsb = inp.getAttribute('data-onsubmit'); // must return Promise
 		if(onsb)
-			promises.push( window[onsb](data, inp.name) );
+			onsbs[inp.name] = onsb;			
 	}
 	
 	for(let rd of document.forms[frm.name].getElementsByClassName('radio_container')){
@@ -594,6 +641,11 @@ function getFormData(frm){
 			valid = false;
 		}
 	}
+	
+	if(valid)
+		for(var n in onsbs)
+			if(onsbs.hasOwnProperty(n))
+				promises.push( window[onsbs[n]](data, n) );	
 		
 	return Promise.all(promises).then(function(){
 		return  valid ? data : null;
@@ -662,19 +714,22 @@ function submitData(){
 			type: frm.getAttribute('data-formtype'),
 			data:	d,
 			rqid: rqId++,
-			callback: window[frm.getAttribute('data-callback')]
+			callback:
+				function(resp){
+					return window[frm.getAttribute('data-callback')].apply(frm, [resp]);
+				}
 		}]);
 
 	} );
 }
 
 function cmpLinkedPasswordInputs(el, group){
-	el.classList.add('changed');
+	//el.classList.add('changed');
 	var els = linkedPasswordInputs[group];
 	if(countElsOfClass(els, 'changed') > 1){
 		var matched = true;
 		for(var i = 1; i < els.length; i++)
-			if(els[i]!=els[0]){
+			if(els[i].value!=els[0].value){
 				matched = false;
 				break;
 			}
@@ -685,7 +740,6 @@ function cmpLinkedPasswordInputs(el, group){
 			for(var i of els)
 				i.classList.add('unmatched');
 	}
-	
 
 	function countElsOfClass(els, cls){
 		var n = 0;
@@ -697,35 +751,77 @@ function cmpLinkedPasswordInputs(el, group){
 }
 
 function chkInputField(ev){
-	var le = ev.target.getAttribute('data-linkedpasswordinput');
-	if(le)
-		return cmpLinkedPasswordInputs(ev.target, le);
-
-	if(!('checkValidity' in ev.target))
-		return;
+	console.log('chkInputField()');
+	ev.target.classList.add('changed');
+	var frm = getFormEl(ev.target);
+	for(var el of frm.elements){
+			if(ev.target.name!=el.name)
+				continue;
+		el.classList.add('changed');
+	}
 	
-	var els = document.getElementsByName(ev.target.name);
-	for(var el of els)
-		if(ev.target.checkValidity())
-			el.classList.remove('invalid_input');
+
+	
+	/*for(var inp of frm.elements[ev.target.name])
+		if(('checkValidity' in ev.target) && !ev.target.checkValidity())
+			inp.classList.add('invalid_input');
 		else
-			el.classList.add('invalid_input');
+			inp.classList.remove('invalid_input');*/
+		
+	
+	setTimeout(function(){
+		
+		if(ev.target.classList.contains('new_password'))
+			if(ev.target.value.length < 8)
+				ev.target.classList.add('tooshort');
+			else
+				ev.target.classList.remove('tooshort');
+				
+	
+		var le = ev.target.getAttribute('data-linkedpasswordinput');
+		if(le)
+			return cmpLinkedPasswordInputs(ev.target, le);
+		if(((ev.target.type=='text')||(ev.target.type=='email'))&&(ev.target.value.length==0))
+			ev.target.classList.remove('invalid_input');
+			
+		if(!('checkValidity' in ev.target)){
+			ev.target.classList.remove('invalid_input');
+			return;
+		}
+		
+		
+		
+		for(var el of frm.elements){
+			if(ev.target.name!=el.name)
+				continue;
+			if(ev.target.checkValidity())
+				el.classList.remove('invalid_input');
+			else
+				el.classList.add('invalid_input');
+		}
+	}, 10); // allow time for value to be changed by browser
+}
+
+function logout(){
+	clearUserData();
+	document.body.removeAttribute('data-logged-in');
 }
 
 function initListeners(){
 	for(let f of document.forms){
 		f.addEventListener('change', chkInputField);
 		f.addEventListener('paste', chkInputField);
-		f.addEventListener('keypress', chkInputField);
+		// f.addEventListener('keypress', chkInputField);
+		f.addEventListener('keyup', chkInputField);
 		f.addEventListener('focusout', chkInputField);
 	}
+	
 	
 	for(let f of document.getElementsByClassName('button_link'))
 		f.addEventListener('click', ldPage);
 	
 	document.getElementById('logout').addEventListener('click', function(ev){
-		clearUserData();
-		document.body.removeAttribute('data-logged-in');
+		logout();
 	});
 
 	document.getElementById('menu_btn').addEventListener('click', menu_select);
@@ -748,7 +844,7 @@ function ldPage(ev){ // load by id or event
 	var pgId = typeof ev == 'object' ? ev.target.getAttribute('data-link') : ev;
 	
 	
-	if(typeof TextEncoderLite == 'undefined'){
+	if((pgId != 'text_wrapper') && (typeof TextEncoderLite == 'undefined')){
 		mkScript('base64js.min.js');
 		mkScript('text-encoder-lite.js');
 	}
@@ -763,7 +859,15 @@ function ldPage(ev){ // load by id or event
 	for(let e of document.querySelectorAll("input[type='email'].invalid_input, input[type='text'].invalid_input, fieldset.radio_container.invalid_input"))
 		if(!('value' in e) || (e.value.length==0))
 			e.classList.remove('invalid_input');
+	clearForms(); // TODO check for side effects	
 }
+
+function clearForms(){
+	for(var inp of document.getElementsByTagName('INPUT'))
+		if((inp.type!='radio') && ('value' in inp))
+			inp.value='';
+}
+
 
 function clearUserData(){
     for(let c of document.cookie.split(";"))
@@ -780,13 +884,14 @@ function clearUserData(){
 <header><div class='button_link' data-link="login_page" id='nav'>&#x2b05;</div><div id='menu_btn'>&#x22ee;
 <div id='menu'>
 <div class='button_link' data-link="login_page" id='logout'>Logout</div>
+<div class='button_link' data-link="app_update_password" id='app_update_password_link'>Update Password</div>
 <!-- <div class='button_link' data-link='settings_page' id='settings'>Settings</div> -->
 </div>
 
 </div>
 </header>
 
-<div id='textwrapper' class="screen">
+<div id='text_wrapper' class="screen">
 <div id='textpane'>
 </div>
 
@@ -805,19 +910,21 @@ Type a message...<br>
 <div class='centered_buttons'>
 <div class='button submit default_button'>Login</div>
 <div class='button button_link' data-link="new_account">Create Account</div>
-<div class='button button_link' data-link="update_password">Update Password</div>
+<div class='button button_link' data-link="app_update_password">Update Password</div>
 <div class='button button_link' data-link="reset_password">Forgot Password</div>
 </div>
 </form>
 </div>
 
-
+<span id='hide'></span>
 <div class='config_screen screen' id='new_account'>
 <form data-formtype="new_account" data-callback='new_account_callback' name='new_account'>
 <!-- <input required placeholder='First Name' name='first_name' type='text'></input><br>
 <input required placeholder='Surname' name='surname' type='text'></input><br/> -->
 <input required placeholder='example@me.com' name='email' type='email' data-onsubmit='hash'></input><br/>
-<input data-onsubmit='hashDelOriginal' name='password' type='password' required placeholder="Password"></input>
+<input data-linkedpasswordinput='2' class='new_password' data-onsubmit='hashDelOriginal' name='password' type='password' required placeholder="Enter  password"></input>
+<input data-linkedpasswordinput='2' class='new_password' data-onsubmit='delInput' name='password2' type='password' required placeholder="Re-enter password"></input>
+<span></span>
 <fieldset required class='radio_container' name='gender'>
 <input required type="radio" name="gender" id='male' value="male">
 <label for="male">Male</label>
@@ -828,7 +935,6 @@ Type a message...<br>
 </fieldset>
 
 <p>Birthday</p>
-<span id='hide'></span>
 <div id='birthday'>
 <select name='day'>
 </select>
@@ -838,15 +944,17 @@ Type a message...<br>
 </select>
 </div>
 <div class='submit submit_btn button default_button'>Submit</div>
+<span class='status_message'></span>
 </form>
 
 </div>
 
 <div class='config_screen screen' id='reset_password'>
-<form data-formtype="reset_password" name='reset_password' data-callback='reset_password'>
+<form data-formtype="reset_password" name='reset_password' data-callback='reset_password_callback'>
 Please enter your email address<br/>
 <input data-onsubmit='hash' name='email' type='email' required placeholder="example@me.com"></input>
 <div class='submit submit_btn button default_button'>Submit</div>
+<span class='status_message'></span>
 </form>
 </div>
 
@@ -855,16 +963,18 @@ Please enter your email address<br/>
 Settings here<br/>
 
 <div class='submit submit_btn button default_button'>Submit</div>
+<span class='status_message'></span>
 </form>
 </div>
 
-<div class='config_screen screen' id='update_password'>
-<form name='update_password'>
-<input data-onsubmit='hashDelOriginal' name='password_old' type='password' required placeholder="Enter old password"></input>
-<input data-linkedpasswordinput='1' data-onsubmit='hashDelOriginal' name='password_new' type='password' required placeholder="Enter new password"></input>
-<input data-linkedpasswordinput='1' data-onsubmit='delInput' name='password_new2' type='password' required placeholder="Re-enter new password"></input>
+<div class='config_screen screen' id='app_update_password'>
+<form data-formtype="app_update_password" name='app_update_password' data-callback='app_update_password_callback'>
+<input data-onsubmit='hashDelOriginal' name='password' type='password' required placeholder="Enter old password"></input>
+<input data-linkedpasswordinput='1' class='new_password' data-onsubmit='hashDelOriginal' name='password_new' type='password' required placeholder="Enter new password"></input>
+<input data-linkedpasswordinput='1' class='new_password' data-onsubmit='delInput' name='password_new2' type='password' required placeholder="Re-enter new password"></input>
 <span></span>
 <div class='submit submit_btn button default_button'>Submit</div>
+<span class='status_message'></span>
 </form>
 </div>
 
