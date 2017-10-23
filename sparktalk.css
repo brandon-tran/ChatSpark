@@ -384,20 +384,25 @@ footer div {
 	margin-bottom: 0.3em;
 }
 
-
-
-.invalid_input:focus {
-	background-color: #FFFAFA;
+:root {
+  --invalid-bg: #FFF5F5;
+  --invalid-bordercolor: red;
+  --invalid-color: red;
+  --valid-color: green;
+  --valid-bg: #F0FFF0;
+  --valid-bordercolor: green;
 }
 
-input ~ input.unmatched, .invalid_input {
-	border-color: red;
-	background-color: #FFF5F5;
+.invalid_input:focus, input.unmatched1, .invalid_input {
+	border-color: var(--invalid-bordercolor);
+	background-color: var(--invalid-bg);
+	
 }
 
-input.new_password.unmatched ~ input.new_password.changed.unmatched:focus ~ span::after {
+
+input.new_password.changed.unmatched1:focus ~ span::after {
 	content:"Passwords are different";
-	color: red;
+	color: var(--invalid-color);
 	opacity: 1;
 	transition: opacity 0.5s;
 	visibility: visible;
@@ -405,30 +410,25 @@ input.new_password.unmatched ~ input.new_password.changed.unmatched:focus ~ span
 
 input.tooshort.new_password:focus ~ input.new_password ~ span::after {
 	content:"Too short";
-	color: red;
+	color: var(--invalid-color);
 	opacity: 1;
 	transition: opacity 0.5s;
 	visibility: visible;
 }
 
-input.new_password.changed:not(.tooshort) ~ input.new_password {
-	animation: expanding_input 0.5s 1;
-	height: 2em;
-}
 
 input.new_password.changed:not(.tooshort) ~ input.new_password:not(.changed) ~ span::after {
 	content:"Please enter new password again";
-	color: green;
+	color: var(--valid-color);
 	opacity: 1;
 	transition: opacity 0.5s;
 	visibility: visible;
 }
 
-input.new_password.changed:not(.tooshort) {
-	background-color: #F0FFF0;
-	border-color: green;	
+input.new_password.changed:not(.tooshort), input.old_password.changed {
+	background-color: var(--valid-bg);
+	border-color: var(--valid-bordercolor);
 }
-
 
 .submit_btn {
 	padding: 0.5em;
@@ -446,14 +446,6 @@ form > fieldset:not(.changed) ~ .submit_btn, form > input:not(.changed) ~ .submi
 	transition: opacity 0.5s;
 }
 
-
-/* input.new_password.changed:not(.unmatched):not(.tooshort) ~ .submit_btn {
-	visibility: visible;
-	opacity: 1;	
-	transition: opacity 0.5s;
-} */
-
-
 input.new_password ~ span::after {
 	font-size:0.7em;
 	text-align: left;
@@ -468,7 +460,10 @@ input.new_password ~ span::after {
 	transition: opacity 2.5s;
 }
 
-input.new_password.tooshort:not(.unmatched) ~ input.new_password, input.new_password:not(.changed) ~ input.new_password {
+input.new_password.tooshort:not(.unmatched0) ~ input.new_password, input.new_password:not(.changed) ~ input.new_password,
+input.old_password.new_password:not(.unmatched1) ~ .new_password, input.old_password:not(.changed) ~ input,
+input[type='email']:not(.changed) ~ input[type='password'], input[type='email'].invalid_input ~ input[type='password']
+{
 	height: 0;
 	padding: 0;
 	margin: 0;
@@ -476,12 +471,32 @@ input.new_password.tooshort:not(.unmatched) ~ input.new_password, input.new_pass
 	animation: shrinking_input 0.5s 1;
 }
 
-input[data-linkedpasswordinput] + span {
+input.old_password:not(.changed) ~ .new_password {
+	visibility: none;
+	opacity: 0;
+	transition: opacity 0.5s;
+}
+
+
+input.old_password.changed ~ .new_password{
+	visibility: visible;
+	opacity: 1;
+	transition: opacity 0.5s;
+}
+
+input.old_password:not(.unmatched0) ~ input.changed.old_password:not(.unmatched1) {
+	background-color: var(--invalid-bg);
+	border-color: var(--invalid-bordercolor);
+}
+
+input.old_password:not(.unmatched0) ~ input.changed.old_password:not(.unmatched1) ~ span::after {
+	content: 'Old and new passwords cannot match';
+	color: var(--valid-color);	
+}
+
+
+input[data-linkedinput] + span {
 	margin-bottom: 2.5em;
 	display: block;
 	position: relative;
 }
-
-
-
-

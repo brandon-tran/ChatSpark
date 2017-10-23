@@ -29,7 +29,7 @@ function login_user(&$rq, &$resp){
 	
 	dLog("login_user() rq 2:", $rq);
 	
-	if(!password_verify($rq->data->password_hash, $row->password_hash)){
+	if(!password_verify(base64_decode($rq->data->password_hash), $row->password_hash)){
 		$resp['status'] = 'incorrect_password';
 		$resp['fields'] = array('password');
 		return $resp['success'] = FALSE;
@@ -50,25 +50,33 @@ function login_user(&$rq, &$resp){
 	return $resp['success'] = TRUE;
 }
 
-function mk_web_hash($str){
-	global $server_salt;
-	$h = hash("SHA256", $str . pack('C*', ...$server_salt));
-	return password_hash( $h, PASSWORD_BCRYPT );
+function mk_web_hash($user_id){
+	$wh = mk_web_hash_password($user_id);
+	if(!$wh){
+		dLog("mk_web_hash() Error making hash");
+		return FALSE;
+	}
+	return password_hash( $wh, PASSWORD_BCRYPT );
 }
 
-function verify_web_password_hash($user_id, $hash){
+function mk_web_hash_password($user_id){
+	global $server_salt;
 	$sql = "SELECT password_hash FROM users WHERE user_id=$user_id";
 	$rows = get_db_rows($sql);
 	if(count($rows)!=1){
 		dLog("verify_web_password_hash() Error: Returning false");
 		return FALSE;
 	}
-	$p_hash = hash("SHA256", $rows[0]->password_hash . pack('C*', ...$server_salt), TRUE);
-	return password_verify($p_hash, $hash);	
+	return hash("SHA256", $rows[0]->password_hash . pack('C*', ...$server_salt), TRUE);
+}
+
+function verify_web_password_hash($user_id, $hash){
+	global $server_salt;
+	$p = mk_web_hash_password($user_id);
+	return password_verify($p, $hash);	
 }
 
 function web_update_password(&$rq, &$resp){
-	global $server_salt;
 	$tkn = decode_token($rq->data->jwt);
 	
 	if(!$tkn){
@@ -91,11 +99,11 @@ function web_update_password(&$rq, &$resp){
 	$resp['message'] = 'Password successfully changed';
 	$resp['status'] = 'password_changed';
 	
-	return $resp['success'] = update_password($tkn->user_id, $rq->data->password_hash);	
+	return $resp['success'] = update_password($tkn->user_id, base64_decode($rq->data->password_hash));	
 }
 
 function update_password($user_id, $password){
-	$sql = 'UPDATE users SET password_hash="' . password_hash($password, PASSWORD_BCRYPT) . '";';
+	$sql = 'UPDATE users SET password_hash="' . password_hash($password, PASSWORD_BCRYPT) . '" WHERE user_id=' . $user_id;
 	return do_sql($sql);
 }
 
@@ -185,7 +193,7 @@ function create_new_account($rq, &$resp){
 		
 	$wr_fields['email_hash_hash'] = CRC32($rq->data->email_hash);
 	
-	$wr_fields['password_hash'] = password_hash($wr_fields['password_hash'], PASSWORD_BCRYPT);
+	$wr_fields['password_hash'] = password_hash(base64_decode($wr_fields['password_hash']), PASSWORD_BCRYPT);
 	
 	$wr_fields['birthday'] = mktime(0,0,0, $rq->data->month + 1, $rq->data->day, $rq->data->year);
 	dLog("wr_fields:", $wr_fields);
@@ -212,7 +220,9 @@ function create_new_account($rq, &$resp){
 
 function app_update_password(&$rq, &$resp){
 	global $token;
-	if($rq->data->password_hash==$rq->data->password_new_hash){
+	$new_password = base64_decode($rq->data->password_new_hash);
+	$old_password = base64_decode($rq->data->password_hash);
+	if($old_password==$new_password){
 		$resp['status'] = 'app_update_same_password';
 		$resp['fields'] = array( 'password_new', 'password_new2' );
 		return $resp['success'] = FALSE;
@@ -223,14 +233,15 @@ function app_update_password(&$rq, &$resp){
 	if(count($rows)!=1)
 		die(dLog('Error: Could not find user with user_id=' . $token->user_id . ' in database users'));
 	dLog('app_update_password() rq:', $rq);
+	$db_password_hash = $rows[0]->password_hash;
 	
-	if(!password_verify($rq->data->password_hash, $rows[0]->password_hash)){
+	if(password_verify($old_password, $db_password_hash)){
 		$resp['status'] = 'app_update_same_password';
 		$resp['fields'] = array( 'password_new', 'password_new2' );
 		return $resp['success'] = FALSE;
 	}	
 
-	$b = update_password($token->user_id, $rq->data->password_new_hash);
+	$b = update_password($token->user_id, base64_decode($rq->data->password_new_hash));
 	$resp['status'] = 'app_update_password_updated';
 	return $resp['success'] = TRUE;
 }
@@ -246,7 +257,6 @@ function reset_password(&$rq, &$resp){
 	
 	return send_email($rq->data->email, $row->user_id, $resp, PASSWORD_RESET_TEMPLATE, function($message, $user_id){
 		$sql = "SELECT password_hash FROM users WHERE user_id=$user_id";
-		$ph = get_db_rows($sql)[0]->password_hash;
 		$tkn = array(
 			'user_id' => $user_id,		
 			'type' => 'reset_password',

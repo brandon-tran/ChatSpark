@@ -660,11 +660,20 @@ function mkScript(src){
 	return s;
 }
 
+function str2BA(str){
+	var ba = [];
+	for(var i = 0; i < str.length; i++)
+		ba.push(str.charCodeAt(i));
+	return ba;
+}
+
 function hash(arr, key){
 	var hashKeyName = key + '_hash';
-	return crypto.subtle.digest("SHA-256", new TextEncoderLite().encode(arr[key].concat(commonSalt))).then(
+	var ba = str2BA(arr[key]).concat(commonSalt);
+	return crypto.subtle.digest("SHA-256", Uint8Array.from(ba)).then(
 	(hash) =>  { 
-		return arr[hashKeyName] = base64js.fromByteArray(new Uint8Array(hash));
+		var u8 = new Uint8Array(hash);
+		return arr[hashKeyName] = base64js.fromByteArray(u8);
 	});
 }
 
@@ -734,11 +743,11 @@ function cmpLinkedPasswordInputs(el, group){
 				break;
 			}
 		if(matched)
-			for(var i of els)
-				i.classList.remove('unmatched');
+			for(var i in els)
+				els[i].classList.remove('unmatched' + i);
 		else
-			for(var i of els)
-				i.classList.add('unmatched');
+			for(var i in els)
+				els[i].classList.add('unmatched' + i);
 	}
 
 	function countElsOfClass(els, cls){
@@ -777,10 +786,12 @@ function chkInputField(ev){
 			else
 				ev.target.classList.remove('tooshort');
 				
-	
-		var le = ev.target.getAttribute('data-linkedpasswordinput');
+			
+		var le = ev.target.getAttribute('data-linkedinput');
 		if(le)
-			return cmpLinkedPasswordInputs(ev.target, le);
+			for(let g of le.split(','))
+				cmpLinkedPasswordInputs(ev.target, g);
+
 		if(((ev.target.type=='text')||(ev.target.type=='email'))&&(ev.target.value.length==0))
 			ev.target.classList.remove('invalid_input');
 			
@@ -830,12 +841,13 @@ function initListeners(){
 
 function initLinkedPasswordInputs(){
 	linkedPasswordInputs = {};
-	for(let i of document.querySelectorAll("input[data-linkedpasswordinput]")){
-		var j = i.getAttribute('data-linkedpasswordinput');
-		if(!(j in linkedPasswordInputs))
-			linkedPasswordInputs[j] = [];
-		linkedPasswordInputs[j].push(i);
-		//i.setAttribute('data-linkedpasswordinput', linkedPasswordInputs[j]);
+	for(let i of document.querySelectorAll("input[data-linkedinput]")){
+		var j = i.getAttribute('data-linkedinput');
+		for(let k of j.split(',')){
+			if(!(k in linkedPasswordInputs))
+				linkedPasswordInputs[k] = [];
+			linkedPasswordInputs[k].push(i);
+		}
 	}
 }
 
@@ -843,12 +855,8 @@ function ldPage(ev){ // load by id or event
 	console.log('ldPage()');
 	var pgId = typeof ev == 'object' ? ev.target.getAttribute('data-link') : ev;
 	
-	
-	if((pgId != 'text_wrapper') && (typeof TextEncoderLite == 'undefined')){
+	if((pgId != 'text_wrapper') && (typeof base64js == 'undefined'))
 		mkScript('base64js.min.js');
-		mkScript('text-encoder-lite.js');
-	}
-	
 	
 	document.body.className = pgId;
 	var el = document.getElementById(pgId);
@@ -910,7 +918,7 @@ Type a message...<br>
 <div class='centered_buttons'>
 <div class='button submit default_button'>Login</div>
 <div class='button button_link' data-link="new_account">Create Account</div>
-<div class='button button_link' data-link="app_update_password">Update Password</div>
+<!--<div class='button button_link' data-link="app_update_password">Update Password</div>-->
 <div class='button button_link' data-link="reset_password">Forgot Password</div>
 </div>
 </form>
@@ -922,8 +930,8 @@ Type a message...<br>
 <!-- <input required placeholder='First Name' name='first_name' type='text'></input><br>
 <input required placeholder='Surname' name='surname' type='text'></input><br/> -->
 <input required placeholder='example@me.com' name='email' type='email' data-onsubmit='hash'></input><br/>
-<input data-linkedpasswordinput='2' class='new_password' data-onsubmit='hashDelOriginal' name='password' type='password' required placeholder="Enter  password"></input>
-<input data-linkedpasswordinput='2' class='new_password' data-onsubmit='delInput' name='password2' type='password' required placeholder="Re-enter password"></input>
+<input data-linkedinput='2' class='new_password' data-onsubmit='hashDelOriginal' name='password' type='password' required placeholder="Enter  password"></input>
+<input data-linkedinput='2' class='new_password' data-onsubmit='delInput' name='password2' type='password' required placeholder="Re-enter password"></input>
 <span></span>
 <fieldset required class='radio_container' name='gender'>
 <input required type="radio" name="gender" id='male' value="male">
@@ -969,9 +977,9 @@ Settings here<br/>
 
 <div class='config_screen screen' id='app_update_password'>
 <form data-formtype="app_update_password" name='app_update_password' data-callback='app_update_password_callback'>
-<input data-onsubmit='hashDelOriginal' name='password' type='password' required placeholder="Enter old password"></input>
-<input data-linkedpasswordinput='1' class='new_password' data-onsubmit='hashDelOriginal' name='password_new' type='password' required placeholder="Enter new password"></input>
-<input data-linkedpasswordinput='1' class='new_password' data-onsubmit='delInput' name='password_new2' type='password' required placeholder="Re-enter new password"></input>
+<input data-linkedinput='3' class='old_password' data-onsubmit='hashDelOriginal' data-unlinkedinput='1' name='password' type='password' required placeholder="Enter old password"></input>
+<input data-linkedinput='1,3'  class='old_password new_password' data-onsubmit='hashDelOriginal' name='password_new' type='password' required placeholder="Enter new password"></input>
+<input data-linkedinput='1' class='new_password' data-onsubmit='delInput' name='password_new2' type='password' required placeholder="Re-enter new password"></input>
 <span></span>
 <div class='submit submit_btn button default_button'>Submit</div>
 <span class='status_message'></span>
