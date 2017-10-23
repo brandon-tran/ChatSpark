@@ -17,37 +17,72 @@ function get_user_by_email_hash($email_hash){
 	return $rows[0];
 }
 
+function record_login_details($success, $user_id = NULL){
+	$success = $success ? 1 : 0;
+	$sql = $user_id ? 
+		"INSERT INTO logins (user_id, success, ip) VALUES($user_id, $success,\"" . $_SERVER['REMOTE_ADDR'] . '")' :
+		"INSERT INTO logins (success, ip) VALUES($success,\"" . $_SERVER['REMOTE_ADDR'] . '")';
+	if(!($res = do_sql($sql)))
+		die(dLog("Could not record to database logins"));
+	return !!$res;
+}
+
+function chk_login_attempts_per_ip(){
+	$sql = 'SELECT COUNT(*) AS count FROM logins WHERE SUCCESS=0 AND ip="' . $_SERVER['REMOTE_ADDR']. '" AND (time + 86400) > ' . time() . ';';
+	dLog('chk_login_attempts_per_ip() res:', get_db_rows($sql));
+	dLog('chk_login_attempts_per_ip() tot:' . get_db_rows($sql)[0]->count);
+	return get_db_rows($sql)[0]->count <= MAX_LOGIN_ATTEMPTS_IP_PER_HOUR;
+}
+
+function chk_login_attempts_per_user($user_id){
+	$sql = "SELECT COUNT(*) AS count FROM logins WHERE SUCCESS=0 AND user_id=$user_id  AND (time + 3600) > " . time() . ';';
+	return get_db_rows($sql)[0]->count <= MAX_LOGIN_ATTEMPTS_USERID_PER_DAY;	
+}
+
 function login_user(&$rq, &$resp){
 	global $token;
-	dLog("login_user() rq:", $rq);
+	if(!chk_login_attempts_per_ip()){
+		record_login_details(FALSE);
+		$resp['status'] = 'number_attempts_per_ip_exceeded';
+		return $resp['success'] = FALSE;
+	}
+	
 	$row = get_user_by_email_hash($rq->data->email_hash);
 	if(!$row){
 		$resp['status'] = 'user_not_found';
 		$resp['fields'] = array('email');
+		record_login_details(FALSE);
 		return $resp['success'] = FALSE;
 	}
 	
-	dLog("login_user() rq 2:", $rq);
+	if(!chk_login_attempts_per_user($row->user_id)){
+		$resp['number_attempts_per_userid_exceeded'];
+		return $resp['success'] = FALSE;
+	}
 	
 	if(!password_verify(base64_decode($rq->data->password_hash), $row->password_hash)){
 		$resp['status'] = 'incorrect_password';
 		$resp['fields'] = array('password');
+		record_login_details(FALSE);
 		return $resp['success'] = FALSE;
 	}
 	
-	dLog("login_user() rq 3:", $rq);
+	$token = mk_user_token($row->user_id);
+	$resp['status'] = 'logged_in';
+	dLog("login_user() resp 4:", $resp);
+	record_login_details(TRUE, $row->user_id);
+	return $resp['success'] = TRUE;
+}
+
+function mk_user_token($user_id){
 	$t = time();
-	$token = array(
-		'user_id' => $row->user_id,
+	return array(
+		'user_id' => $user_id,
 		'created' => $t,
 		'issued_by' => $_SERVER['SERVER_ADDR'],
 		'check_after' => $t + STEP_TIME_BEFORE_PASSWORD_UPDATE_CHECK, // the time after which it should be checked to see if there has been a password update
+		'password_hash_hash' => mk_web_hash($user_id),
 	);
-
-	$resp['status'] = 'logged_in';
-	dLog("login_user() resp 4:", $resp);
-	
-	return $resp['success'] = TRUE;
 }
 
 function mk_web_hash($user_id){
@@ -220,6 +255,7 @@ function create_new_account($rq, &$resp){
 
 function app_update_password(&$rq, &$resp){
 	global $token;
+	dLog('app_update_password() 1 rq:', $rq);
 	$new_password = base64_decode($rq->data->password_new_hash);
 	$old_password = base64_decode($rq->data->password_hash);
 	if($old_password==$new_password){
@@ -228,18 +264,22 @@ function app_update_password(&$rq, &$resp){
 		return $resp['success'] = FALSE;
 	}
 	
+	dLog('app_update_password() 2 rq:', $rq);
+	
 	$sql = 'SELECT password_hash FROM users WHERE user_id=' . $token->user_id;
 	$rows = get_db_rows($sql);
 	if(count($rows)!=1)
 		die(dLog('Error: Could not find user with user_id=' . $token->user_id . ' in database users'));
-	dLog('app_update_password() rq:', $rq);
+	dLog('app_update_password() 3 rq:', $rq);
 	$db_password_hash = $rows[0]->password_hash;
 	
-	if(password_verify($old_password, $db_password_hash)){
-		$resp['status'] = 'app_update_same_password';
-		$resp['fields'] = array( 'password_new', 'password_new2' );
+	if(!password_verify($old_password, $db_password_hash)){
+		$resp['status'] = 'app_update_password_old_password_incorrect';
+		$resp['fields'] = array('password');
 		return $resp['success'] = FALSE;
-	}	
+	}
+	
+	dLog('app_update_password() 4 rq:', $rq);
 
 	$b = update_password($token->user_id, base64_decode($rq->data->password_new_hash));
 	$resp['status'] = 'app_update_password_updated';

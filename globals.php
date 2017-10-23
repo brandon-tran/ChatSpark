@@ -39,6 +39,8 @@ define('PASSWORD_RESET_TEMPLATE', FILE_DIR . DIRECTORY_SEPARATOR . 'password_res
 define('PASSWORD_RESET_HTML', FILE_DIR . DIRECTORY_SEPARATOR . 'password_reset.html');
 
 define('MAX_EMAILS_PER_HOUR', 5);
+define('MAX_LOGIN_ATTEMPTS_USERID_PER_DAY', 10);
+define('MAX_LOGIN_ATTEMPTS_IP_PER_HOUR', 5);
 define('MIN_AGE', 10);
 define('MAX_AGE', 100);
 

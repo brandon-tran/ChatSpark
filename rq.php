@@ -59,20 +59,34 @@ elseif(find_rq_by_type($rq_list, 'new_account', 'create_new_account', $resp, $rq
 if($verified)   // keep this flow very clean and simple 
 	;
 elseif(!isset($rq_auth))
-	exit_rq($exit_code);
-elseif(!($token = decode_token($rq_auth))){
-	exit_rq(1);
+	exit_rq(5);
+elseif(!($token = decode_token($rq_auth)))
+	exit_rq(4);
+elseif($token->check_after < time()){
+	if(!verify_web_password_hash($token->user_id, $token->password_hash_hash)){
+		add_to_response(
+			array(
+				'status' => 'token_expired',
+				'message' => 'Token has expired, please log in again',
+				'success' => FALSE,
+			)
+		);
+		exit_rq(7);
+	}
+	$token = mk_user_token($token->user_id);
 }
-else
-	$verified = TRUE;
+
+$verified = TRUE;
 
 dLog('main() 3');
 
 
 if(find_rq_by_type($rq_list, 'app_update_password', 'app_update_password', $resp, $rq)){
 	add_to_response($resp);
-	$token = NULL;
-	exit_rq(3);
+	if(!$resp['success']){		
+		$token = NULL;
+		exit_rq(3);
+	}
 }
 
 foreach($rq_list as $rq){

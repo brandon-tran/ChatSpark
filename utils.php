@@ -4,9 +4,11 @@ include('globals.php');
 include('jwt' . DIRECTORY_SEPARATOR . 'JWT.php');
 
 function maintenance(){
-	$t = time() - 3600;
-	$sql = "DELETE FROM email WHERE requested < $t OR sent < $t";
+	$t = time();
+	$sql = "DELETE FROM email WHERE requested < ($t - 3600) OR sent < ($t - 3600)";
 	do_sql($sql);	
+	$sql ="DELETE FROM logins WHERE time < ($t - 86400);";
+	do_sql($sql);
 }
 
 function sanitize_object(&$obj){
